@@ -64,6 +64,7 @@ api.sync(path: str = "AGENTS.md") -> str                        # returns the wr
 | POST | `/api/ingest` | multipart file + `kind` | `{messages, sources}` |
 | POST | `/api/extract` | `{limit}` | `Entry[]` |
 | GET | `/api/stats` | none | feedback stats + counts |
+| GET | `/api/demo-session` | none | `{title, messages: [{role, text}]}`: the demo Claude Code session (`demo/claude_code/session.jsonl`) parsed with `sthira.ingest.claude_code.parse`, for the in-browser agent replay; empty `messages` if the file is missing |
 
 ## Environment
 
