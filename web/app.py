@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import json
 import os
+import queue
 import threading
+import time
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 
 HERE = Path(__file__).resolve().parent
@@ -154,6 +157,53 @@ async def ingest(file: UploadFile = File(...), kind: str | None = Form(None)):
     if len(data) > 4_000_000:
         raise HTTPException(413, "File too large for the hosted demo (4 MB). Run Sthira locally for full exports.")
     return api.ingest_upload(file.filename or "upload.json", data, kind or None, con=con())
+
+
+def _seconds_per_chunk_hint() -> float:
+    """A first guess for the ETA before any chunk has finished: a hosted model is quick, a laptop CPU is not."""
+    return 4.0 if config.provider() == "openai" else 25.0
+
+
+@app.post("/api/import/stream")
+async def import_stream(file: UploadFile = File(...), kind: str | None = Form(None)):
+    """Import and extract, reporting progress as it happens (newline-delimited JSON), so the UI can show real
+    progress and an honest ETA instead of a spinner. One request, one worker thread, so it behaves the same on
+    serverless hosts where each instance has its own /tmp."""
+    data = await file.read()
+    if len(data) > 4_000_000:
+        raise HTTPException(413, "File too large for the hosted demo (4 MB). Run Sthira locally for full exports.")
+    name = file.filename or "upload.json"
+    q: queue.Queue = queue.Queue()
+    limit = 3 if os.environ.get("VERCEL") else None  # the hosted demo reads at most 3 conversations
+
+    def worker():
+        t0 = time.time()
+        try:
+            c = con()
+            r = api.ingest_upload(name, data, kind or None, con=c)
+            q.put({"event": "parsed", "messages": r["messages"], "sources": r["sources"],
+                   "seconds_per_chunk_hint": _seconds_per_chunk_hint(), "model": config.model()})
+            skipped: list[str] = []
+            entries = api.extract(limit, con=c, source_ids=r["source_ids"], errors=skipped,
+                                  on_chunk=lambda ev: q.put({"event": "chunk", **ev}))
+            q.put({"event": "done", "entries": [e.model_dump() for e in entries], "skipped": len(skipped),
+                   "elapsed": round(time.time() - t0, 1)})
+        except Exception as e:  # surface it to the UI instead of a dropped connection
+            q.put({"event": "error", "message": f"{type(e).__name__}: {e}"[:300]})
+        finally:
+            q.put(None)
+
+    threading.Thread(target=worker, daemon=True, name="sthira-import").start()
+
+    def stream():
+        while True:
+            item = q.get()
+            if item is None:
+                return
+            yield json.dumps(item) + "\n"
+
+    return StreamingResponse(stream(), media_type="application/x-ndjson",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 @app.post("/api/import")

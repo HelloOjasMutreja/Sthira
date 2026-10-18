@@ -157,6 +157,32 @@ input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:9px;bac
 .drop{display:block;cursor:pointer;border:3px dashed var(--ink);border-radius:18px;padding:22px;text-align:center;background:#fff;transition:background .15s,transform .15s}
 .drop.over{background:var(--saffron-soft);transform:rotate(-1deg) scale(1.01)}
 .drop input{display:none}
+.reader{margin-top:16px;border:3px solid var(--ink);border-radius:18px;background:#fff;padding:14px;display:grid;grid-template-columns:118px 1fr;gap:16px;box-shadow:var(--shadow)}
+.reader[hidden]{display:none}
+.paper{position:relative;border:3px solid var(--ink);border-radius:8px;background:var(--paper);padding:10px 9px 2px;height:136px;overflow:hidden}
+.paper i{display:block;height:7px;border-radius:4px;background:#cfd5ea;margin:0 0 9px;position:relative}
+.paper i::after{content:"";position:absolute;inset:0;border-radius:4px;background:var(--saffron);transform:scaleX(0);transform-origin:left;transition:transform .6s cubic-bezier(.2,.8,.2,1)}
+.paper i.hit::after{transform:scaleX(1)}
+.beam{position:absolute;left:0;right:0;height:30px;top:-30px;background:linear-gradient(transparent,rgba(255,176,46,.55));border-bottom:3px solid var(--saffron);display:none}
+.reader.live .beam{display:block}
+.rphase{font-weight:800;font-size:16px;line-height:1.25;min-height:2.5em}
+.rbar{height:18px;border:3px solid var(--ink);border-radius:10px;background:var(--line);margin:8px 0 6px;overflow:hidden}
+.rbar i{display:block;height:100%;width:0;background:repeating-linear-gradient(135deg,var(--saffron) 0 10px,#ffc45a 10px 20px);background-size:28px 28px;transition:width .35s linear}
+.reader.done .rbar i{background:var(--jade);animation:none}
+.rnums{display:flex;justify-content:space-between;gap:8px;font-size:14px;font-weight:700;color:var(--ink-2)}
+.found{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;max-height:108px;overflow:auto}
+.found span{border:2px solid var(--ink);border-radius:9px;padding:2px 9px;font-size:13px;font-weight:700;background:var(--saffron-soft)}
+@keyframes scan{from{top:-30px}to{top:calc(100% - 2px)}}
+@keyframes barber{to{background-position:28px 0}}
+@keyframes chip{from{transform:scale(.3) translateY(14px);opacity:0}}
+@keyframes pulse{0%,100%{box-shadow:3px 3px 0 var(--ink)}50%{box-shadow:3px 3px 0 var(--ink),0 0 0 8px rgba(255,176,46,.5)}}
+@media (prefers-reduced-motion:no-preference){
+  .reader.live .beam{animation:scan 1.7s ease-in-out infinite}
+  .reader.live .rbar i{animation:barber 1s linear infinite}
+  .found span{animation:chip .4s cubic-bezier(.2,.9,.3,1.4)}
+  .tab.pulse{animation:pulse 1s 3}
+}
+@media (max-width:900px){.reader{grid-template-columns:1fr}.paper{height:86px}.paper i:nth-child(n+6){display:none}}
 pre{margin:0;background:var(--ink);color:#e6ebf6;border-radius:14px;padding:14px 16px;overflow:auto;font:13px/1.55 ui-monospace,Consolas,monospace;max-height:330px;white-space:pre-wrap}
 footer{margin-top:50px;padding-top:20px;border-top:3px solid var(--ink);color:var(--ink-2);font-size:14px;max-width:88ch}
 
@@ -280,6 +306,15 @@ dialog .row{justify-content:flex-end}
           <label class="drop" id="drop" for="file"><b>Drop a file here</b><br><span class="meta">or click to choose · .json .jsonl .md .txt .vtt .srt .zip</span>
             <input id="file" type="file" accept=".json,.jsonl,.md,.txt,.zip,.vtt,.srt"></label>
           <p class="meta" id="upmsg" style="margin:10px 0 0"></p>
+          <div class="reader" id="reader" hidden aria-live="polite">
+            <div class="paper" id="paper" aria-hidden="true"></div>
+            <div>
+              <div class="rphase" id="rphase"></div>
+              <div class="rbar"><i id="rfill"></i></div>
+              <div class="rnums"><span id="rcount"></span><span id="reta"></span></div>
+              <div class="found" id="found"></div>
+            </div>
+          </div>
         </div>
         <div class="box">
           <h2 style="font-size:30px">What every agent reads</h2>
@@ -568,18 +603,67 @@ async function loadRules() {
     : `<div class="rule">No rules yet. Reject something with a reason and it shows up here.<small>That's how Sthira gets better at your project.</small></div>`;
 }
 
-/* ---------- upload ---------- */
+/* ---------- upload: shows the model reading, with real progress and an honest ETA ---------- */
+const fmtEta = s => !isFinite(s) ? "" : s < 4 ? "almost done" : s < 60 ? `about ${Math.round(s)} s left` : `about ${Math.floor(s / 60)} min ${Math.round(s % 60)} s left`;
 async function upload(f) {
-  if (!f) return; const fd = new FormData(); fd.append("file", f);
-  $("#upmsg").textContent = "Reading it with the open-weight model…";
+  if (!f) return;
+  const rd = $("#reader"), fill = $("#rfill"), phase = $("#rphase"), count = $("#rcount"), etaEl = $("#reta"), foundEl = $("#found"), paper = $("#paper");
+  rd.hidden = false; rd.className = "reader live"; $("#upmsg").textContent = ""; foundEl.innerHTML = ""; fill.style.width = "3%";
+  paper.innerHTML = [92, 78, 100, 64, 88, 96, 58, 84, 72].map(w => `<i style="width:${w}%"></i>`).join("") + '<div class="beam"></div>';
+  const lines = [...paper.querySelectorAll("i")]; let lit = 0;
+  let total = 0, done = 0, hint = 10, chunkStart = Date.now(), finished = false; const times = [];
+  const avg = () => times.length ? times.reduce((x, y) => x + y, 0) / times.length : hint;
+  phase.textContent = `Opening ${f.name}…`; count.textContent = ""; etaEl.textContent = "";
+  const tick = setInterval(() => {
+    if (finished || !total) return;
+    const a = avg(), partial = Math.min(.92, (Date.now() - chunkStart) / 1000 / a);
+    fill.style.width = Math.min(97, ((done + partial) / total) * 100) + "%";
+    etaEl.textContent = fmtEta(Math.max(0, total - done - partial) * a);
+  }, 250);
+  const handle = ev => {
+    if (ev.event === "parsed") {
+      hint = ev.seconds_per_chunk_hint || hint;
+      phase.textContent = `Found ${ev.messages} message${ev.messages === 1 ? "" : "s"}. Starting to read with ${ev.model}…`;
+    } else if (ev.event === "chunk") {
+      if (ev.phase === "start") {
+        total = ev.total; chunkStart = Date.now(); count.textContent = `0 of ${total}`;
+        phase.textContent = `Reading ${ev.conversations} conversation${ev.conversations === 1 ? "" : "s"}: ${ev.messages} messages in ${total} chunk${total === 1 ? "" : "s"}`;
+      } else if (ev.phase === "split") { total = ev.total; count.textContent = `${done} of ${total}`; }
+      else {
+        times.push((Date.now() - chunkStart) / 1000); chunkStart = Date.now(); done = ev.done; total = ev.total;
+        count.textContent = `${done} of ${total}`;
+        phase.textContent = ev.phase === "skip" ? `Couldn't read part of “${ev.title}”. It stays pending.` : (done < total ? `Read part of “${ev.title}”. Next chunk…` : "Checking every quote against your file…");
+        const target = Math.round(lines.length * done / total); while (lit < target) lines[lit++].classList.add("hit");
+        (ev.found || []).forEach(x => { const sp = document.createElement("span"); sp.textContent = `${KIND[x.kind] || x.kind}: ${x.statement.length > 58 ? x.statement.slice(0, 57) + "…" : x.statement}`; foundEl.appendChild(sp); foundEl.scrollTop = foundEl.scrollHeight; blip("ok"); });
+      }
+    } else if (ev.event === "done") {
+      finished = true; fill.style.width = "100%"; lines.forEach(l => l.classList.add("hit")); rd.className = "reader done";
+      const n = ev.entries.length;
+      phase.textContent = n ? `Done in ${Math.round(ev.elapsed)} s. ${n} new thing${n === 1 ? "" : "s"} to review.` : `Done in ${Math.round(ev.elapsed)} s. Nothing new worth recording.`;
+      count.textContent = total ? `${total} of ${total}` : ""; etaEl.textContent = ev.skipped ? `${ev.skipped} chunk${ev.skipped === 1 ? "" : "s"} still pending` : "";
+      if (n) { toast(`${n} new to review. Open "To review".`, "good"); tab = "proposed"; rewindAt = null; $("#rw").value = 1000; blip("ok"); }
+    } else if (ev.event === "error") throw new Error(ev.message);
+  };
+  const friendly = m => /Model call failed|Rate limited|LLMUnavailable|LLMRateLimited|Can't reach/.test(m)
+    ? "The model is busy or offline, so extraction can't run right now. Run Sthira locally to import your history." : m;
   try {
-    const out = await j("/api/import", {method: "POST", body: fd});
-    $("#upmsg").textContent = `${out.messages} messages read, ${out.entries.length} new thing${out.entries.length === 1 ? "" : "s"} to review.`;
-    if (out.entries.length) { toast(`${out.entries.length} new to review. Open "To review".`, "good"); tab = "proposed"; rewindAt = null; $("#rw").value = 1000; }
+    const fd = new FormData(); fd.append("file", f);
+    const res = await fetch("/api/import/stream", {method: "POST", body: fd});
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || res.statusText);
+    if (res.body && res.body.getReader) {
+      const reader = res.body.getReader(), dec = new TextDecoder(); let buf = "";
+      for (;;) {
+        const {value, done: end} = await reader.read(); if (end) break;
+        buf += dec.decode(value, {stream: true}); let i;
+        while ((i = buf.indexOf("\n")) >= 0) { const line = buf.slice(0, i); buf = buf.slice(i + 1); if (line.trim()) handle(JSON.parse(line)); }
+      }
+      if (buf.trim()) handle(JSON.parse(buf));
+    } else (await res.text()).split("\n").filter(l => l.trim()).forEach(l => handle(JSON.parse(l)));
     await load();
+    const t = document.querySelector('.tab[data-k="proposed"]'); if (t && tab === "proposed") t.classList.add("pulse");
   } catch (e) {
-    $("#upmsg").textContent = /Model call failed|Rate limited/.test(e.message) ? "The model is busy or offline, so extraction can't run right now. Run Sthira locally to import your history." : e.message;
-  }
+    rd.hidden = true; $("#upmsg").textContent = friendly(e.message);
+  } finally { clearInterval(tick); rd.classList.remove("live"); }
 }
 $("#file").onchange = e => upload(e.target.files[0]);
 const dz = $("#drop");
