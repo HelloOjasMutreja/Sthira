@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import queue
 import threading
 import time
@@ -19,6 +20,10 @@ ROOT = HERE.parent
 # On serverless hosts only /tmp is writable; each cold start gets a freshly seeded demo ledger.
 if "STHIRA_DB" not in os.environ:
     os.environ["STHIRA_DB"] = "/tmp/sthira.db" if os.environ.get("VERCEL") else str(ROOT / ".sthira" / "web.db")
+# Values pasted into a dashboard often end with a newline, which makes the Authorization header invalid.
+for _name in ("STHIRA_PROVIDER", "STHIRA_MODEL", "STHIRA_FALLBACK_MODEL", "STHIRA_OPENAI_BASE_URL", "STHIRA_OPENAI_API_KEY"):
+    if os.environ.get(_name):
+        os.environ[_name] = os.environ[_name].strip()
 if os.environ.get("VERCEL") and "STHIRA_PROVIDER" not in os.environ:
     os.environ["STHIRA_PROVIDER"] = "openai"
     os.environ.setdefault("STHIRA_MODEL", "alibaba/qwen-3-32b")
@@ -28,6 +33,16 @@ from sthira import api, ask as ask_mod, config, llm, sarvam, store  # noqa: E402
 from . import fallback, seed  # noqa: E402
 
 app = FastAPI(title="Sthira", version="0.1.0")
+
+# Provider errors can echo request headers (e.g. httpx's "Illegal header value b'Bearer ...'"), and these
+# messages are returned to the browser. Never let a key out.
+_SECRET = re.compile(r"(Bearer\s+)[^\s'\"]+|\b(?:gsk|sk|sk-proj|vck)[_-][A-Za-z0-9_-]{8,}", re.I)
+
+
+def _safe(e: Exception) -> str:
+    return _SECRET.sub(lambda m: (m.group(1) or "") + "[redacted]", str(e))
+
+
 _lock = threading.Lock()
 
 
@@ -135,7 +150,7 @@ def check(body: CheckBody):
         v = fallback.keyword_check(text, api.list_entries("settled", con=con()))
         if v:
             return {**v.model_dump(), "fallback": "keyword"}
-        raise HTTPException(502, f"Model call failed: {e}")
+        raise HTTPException(502, f"Model call failed: {_safe(e)}")
 
 
 def _cached_checks() -> dict:
@@ -218,7 +233,7 @@ async def import_and_extract(file: UploadFile = File(...), kind: str | None = Fo
     try:
         llm.chat_json("Reply with JSON.", 'Return {"ok": true}', {"type": "object", "properties": {"ok": {"type": "boolean"}}, "required": ["ok"]})
     except Exception as e:
-        raise HTTPException(502, f"Model call failed: {e}")
+        raise HTTPException(502, f"Model call failed: {_safe(e)}")
     entries = api.extract(3, con=c, source_ids=r["source_ids"])  # only this upload, never someone else's
     return {"messages": r["messages"], "sources": r["sources"], "entries": [e.model_dump() for e in entries]}
 
@@ -229,7 +244,7 @@ def health():
         out = llm.chat_json("Reply with JSON.", 'Return {"ok": true}', {"type": "object", "properties": {"ok": {"type": "boolean"}}, "required": ["ok"]})
         return {"model": config.model(), "ok": bool(out.get("ok"))}
     except Exception as e:
-        raise HTTPException(502, f"Model call failed: {e}")
+        raise HTTPException(502, f"Model call failed: {_safe(e)}")
 
 
 @app.post("/api/extract")
@@ -237,7 +252,7 @@ def extract(body: ExtractBody):
     try:
         return [e.model_dump() for e in api.extract(min(body.limit or 3, 5), con=con())]
     except Exception as e:
-        raise HTTPException(502, f"Model call failed: {e}")
+        raise HTTPException(502, f"Model call failed: {_safe(e)}")
 
 
 @app.post("/api/demo/drop")
