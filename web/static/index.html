@@ -4,356 +4,597 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sthira: what you decided, kept</title>
-<meta name="description" content="Sthira remembers what you decided with AI and warns when new work contradicts it. Local-first, open-weight, open source.">
+<meta name="description" content="Sthira remembers what you decided with AI and stops your agents from undoing it. Open-weight, local-first, open source.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=Noto+Serif+Devanagari:wght@500&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&family=Noto+Serif+Devanagari:wght@600..800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#f6f3ee; --panel:#fffdf9; --ink:#1c1a17; --muted:#6b655c; --line:#e4ddd2;
-  --accent:#8a4b16; --accent-soft:#f3e6d8;
-  --ok:#2f6b3f; --ok-soft:#e3efe5; --bad:#a3271f; --bad-soft:#f7e2df; --warn:#8a6a10; --warn-soft:#f5eccd;
-  --shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(60,40,10,.06);
-}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --bg:#141210; --panel:#1c1916; --ink:#efe9e0; --muted:#a39a8d; --line:#2f2a24;
-    --accent:#e0a36a; --accent-soft:#2e2216;
-    --ok:#7fc28e; --ok-soft:#18271c; --bad:#f08a80; --bad-soft:#2d1715; --warn:#e6c35c; --warn-soft:#2a2410;
-    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
-  }
-}
-:root[data-theme="dark"]{
-  --bg:#141210; --panel:#1c1916; --ink:#efe9e0; --muted:#a39a8d; --line:#2f2a24;
-  --accent:#e0a36a; --accent-soft:#2e2216;
-  --ok:#7fc28e; --ok-soft:#18271c; --bad:#f08a80; --bad-soft:#2d1715; --warn:#e6c35c; --warn-soft:#2a2410;
+  --chalk:#e6ebf6; --paper:#fbfaf7; --ink:#161a44; --ink-2:#4b5080; --line:#c9d1e6;
+  --saffron:#ffb02e; --saffron-soft:#ffe9bf; --jade:#18b393; --jade-soft:#cdf3e8;
+  --madder:#ff4d6b; --madder-soft:#ffd9e0; --sky:#8fc4ff; --plum:#b58cff;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --inscribe:"Newsreader",Georgia,serif;
+  --shadow:4px 4px 0 var(--ink); --shadow-lg:7px 7px 0 var(--ink);
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
-header{padding:36px 0 20px;display:flex;gap:24px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
-.brand{display:flex;align-items:baseline;gap:14px}
-.deva{font-family:"Noto Serif Devanagari",serif;font-size:44px;color:var(--accent);line-height:1}
-h1{font-family:"Instrument Serif",serif;font-weight:400;font-size:46px;margin:0;letter-spacing:-.01em;line-height:1}
-.tag{font-family:"Instrument Serif",serif;font-style:italic;font-size:22px;color:var(--muted);margin:10px 0 0}
-.badges{display:flex;gap:8px;flex-wrap:wrap}
-.badge{font-size:12px;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:5px 10px;color:var(--muted)}
-.badge b{color:var(--ink);font-weight:600}
-.grid{display:grid;grid-template-columns:1.05fr 1fr;gap:20px;margin:8px 0 40px}
-@media (max-width:900px){.grid{grid-template-columns:1fr}h1{font-size:38px}.deva{font-size:36px}}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:20px}
-.card h2{font-family:"Instrument Serif",serif;font-weight:400;font-size:26px;margin:0 0 4px}
-.sub{color:var(--muted);margin:0 0 14px;font-size:14px}
-textarea{width:100%;min-height:92px;resize:vertical;border:1px solid var(--line);border-radius:10px;padding:12px;font:inherit;background:var(--bg);color:var(--ink)}
-textarea:focus,input:focus{outline:2px solid var(--accent);outline-offset:1px}
-.chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-.chip{font-size:13px;border:1px dashed var(--line);border-radius:999px;padding:4px 10px;background:transparent;color:var(--muted);cursor:pointer}
-.chip:hover{border-color:var(--accent);color:var(--accent)}
-button.primary{background:var(--ink);color:var(--bg);border:0;border-radius:10px;padding:10px 16px;font:600 14px Inter,sans-serif;cursor:pointer}
-button.primary:disabled{opacity:.5;cursor:wait}
-button.ghost{background:transparent;border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:5px 10px;font:500 13px Inter,sans-serif;cursor:pointer}
-button.ghost:hover{border-color:var(--accent)}
-.result{margin-top:16px}
-.verdict{border-radius:12px;padding:16px;border:1px solid}
-.verdict.bad{background:var(--bad-soft);border-color:color-mix(in srgb,var(--bad) 35%,transparent)}
-.verdict.ok{background:var(--ok-soft);border-color:color-mix(in srgb,var(--ok) 35%,transparent)}
-.verdict h3{margin:0 0 8px;font-size:15px}
-.verdict.bad h3{color:var(--bad)} .verdict.ok h3{color:var(--ok)}
-.conflict{border-top:1px solid color-mix(in srgb,var(--bad) 25%,transparent);padding-top:10px;margin-top:10px}
-.quote{font-family:"Instrument Serif",serif;font-style:italic;font-size:18px;color:var(--ink);margin:6px 0;border-left:3px solid var(--accent);padding-left:10px}
-.meta{font-size:12.5px;color:var(--muted)}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:20px}
-.stat{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--bg)}
-.stat .n{font-family:"Instrument Serif",serif;font-size:34px;line-height:1}
-.stat .l{font-size:12px;color:var(--muted);margin-top:4px}
-.arrow{color:var(--ok)}
-.tabs{display:flex;gap:4px;margin:0 0 12px;flex-wrap:wrap}
-.tab{border:0;background:transparent;color:var(--muted);padding:6px 10px;border-radius:8px;cursor:pointer;font:500 13px Inter,sans-serif}
-.tab.on{background:var(--accent-soft);color:var(--accent)}
-.tab .c{opacity:.7;margin-left:4px}
-.list{display:flex;flex-direction:column;gap:10px;max-height:640px;overflow:auto;padding-right:4px}
-.entry{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--bg)}
-.entry.superseded{opacity:.6}
-.entry.rejected{opacity:.55}
-.row{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-.kind{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:600}
-.st{font-size:11px;border-radius:999px;padding:2px 8px}
-.st.settled{background:var(--ok-soft);color:var(--ok)} .st.proposed{background:var(--warn-soft);color:var(--warn)}
-.st.rejected{background:var(--bad-soft);color:var(--bad)} .st.superseded{background:var(--line);color:var(--muted)}
-.stmt{margin:6px 0 4px;font-weight:500}
-.why{font-size:13.5px;color:var(--muted);margin:0 0 6px}
-.actions{display:flex;gap:6px;margin-top:8px}
-.how{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:0 0 28px}
-@media (max-width:900px){.how{grid-template-columns:1fr 1fr}}
-.step{border-top:2px solid var(--accent);padding-top:10px}
-.step b{display:block;font-family:"Instrument Serif",serif;font-weight:400;font-size:20px}
-.step span{font-size:13.5px;color:var(--muted)}
-pre{font:12.5px/1.5 "JetBrains Mono",monospace;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;overflow:auto;white-space:pre-wrap}
-.upload{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
-.err{color:var(--bad);font-size:13.5px}
-footer{color:var(--muted);font-size:13px;padding:24px 0 40px;border-top:1px solid var(--line)}
-footer a{color:var(--accent)}
-.spinner{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:s .8s linear infinite;vertical-align:-2px}
-@keyframes s{to{transform:rotate(360deg)}}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--chalk);color:var(--ink);font:16px/1.5 var(--display);-webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(circle,#c3cce4 1.2px,transparent 1.3px);background-size:26px 26px}
+a{color:inherit}
+button{font:inherit;cursor:pointer;color:inherit}
+:focus-visible{outline:3px solid var(--saffron);outline-offset:3px;border-radius:6px}
+.wrap{max-width:1240px;margin:0 auto;padding:0 20px 60px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* ---------- top bar ---------- */
+.top{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:18px 0;flex-wrap:wrap}
+.mark{display:flex;align-items:center;gap:14px}
+.deva{font-family:"Noto Serif Devanagari",serif;font-weight:800;font-size:46px;line-height:1;color:var(--ink);display:inline-block}
+.latin{font-weight:800;font-size:34px;letter-spacing:-.02em;display:flex}
+.latin span{display:inline-block}
+.pills{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pill{border:2px solid var(--ink);background:var(--paper);border-radius:999px;padding:5px 13px;font-size:13px;font-weight:600;display:flex;gap:7px;align-items:center}
+.pill i{width:9px;height:9px;border-radius:50%;background:var(--jade);display:inline-block;box-shadow:0 0 0 0 var(--jade)}
+.pill button{all:unset;cursor:pointer}
+.btn{border:2px solid var(--ink);background:var(--paper);border-radius:12px;padding:9px 16px;font-weight:700;box-shadow:var(--shadow);transition:transform .08s,box-shadow .08s,background .15s}
+.btn:hover{background:var(--saffron-soft)}
+.btn:active{transform:translate(4px,4px);box-shadow:0 0 0 var(--ink)}
+.btn.go{background:var(--saffron)}
+.btn.go:hover{background:#ffc15a}
+.btn.jade{background:var(--jade);color:#04332a}
+.btn.small{padding:6px 12px;font-size:14px;box-shadow:3px 3px 0 var(--ink);border-radius:10px}
+.btn.small:active{transform:translate(3px,3px)}
+.btn[disabled]{opacity:.55;cursor:wait}
+.ghost{background:transparent;box-shadow:none;border-style:dashed}
+.ghost:active{transform:none}
+
+/* ---------- hero ---------- */
+.hero{display:grid;grid-template-columns:1.05fr 1fr;gap:34px;align-items:start;padding:14px 0 30px}
+h1{font-size:clamp(38px,5.4vw,74px);line-height:.98;letter-spacing:-.035em;font-weight:800;margin:6px 0 16px;max-width:13ch}
+.lede{font-size:19px;color:var(--ink-2);max-width:46ch;margin:0 0 20px}
+.ask{position:relative}
+textarea{width:100%;min-height:118px;resize:vertical;border:3px solid var(--ink);border-radius:18px;background:var(--paper);padding:16px 18px;font:500 18px/1.45 var(--display);color:var(--ink);box-shadow:var(--shadow-lg)}
+textarea::placeholder{color:#8a90b8}
+.askrow{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:18px 0 6px}
+.kbd{font-size:13px;color:var(--ink-2)}
+.chips{display:flex;gap:9px;flex-wrap:wrap;margin:16px 0 2px}
+.chip{border:2px solid var(--ink);background:var(--paper);border-radius:999px;padding:6px 14px;font-size:14px;font-weight:600;transition:transform .12s,background .15s}
+.chip:hover{background:var(--saffron-soft);transform:translateY(-2px) rotate(-1deg)}
+
+/* ---------- arena ---------- */
+.arena{position:relative;border:3px solid var(--ink);border-radius:26px;background:var(--paper);box-shadow:var(--shadow-lg);padding:22px;min-height:440px;overflow:hidden}
+.arena::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,transparent 0 14px,rgba(22,26,68,.035) 14px 15px);pointer-events:none}
+.arena>*{position:relative}
+.idle{display:grid;place-items:center;text-align:center;min-height:392px;gap:14px;align-content:center}
+.idle .slab{width:min(300px,80%);border:3px solid var(--ink);border-radius:14px;background:var(--saffron-soft);padding:18px 18px 16px;box-shadow:var(--shadow);text-align:left}
+.idle .slab b{display:block;font-size:17px;line-height:1.25}
+.idle .slab q{display:block;font-family:var(--inscribe);font-style:italic;font-size:16px;margin-top:8px;quotes:none;color:var(--ink-2)}
+.idle small{color:var(--ink-2);max-width:30ch}
+.stages{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.stage{border:2px solid var(--line);color:#8a90b8;border-radius:999px;padding:4px 12px;font-size:13px;font-weight:700;display:flex;gap:7px;align-items:center;transition:all .25s}
+.stage i{width:9px;height:9px;border-radius:50%;background:currentColor}
+.stage.on{border-color:var(--ink);color:var(--ink);background:var(--saffron-soft)}
+.stage.on i{animation:blink .7s infinite alternate}
+.stage.done{border-color:var(--ink);background:var(--jade-soft);color:#05503f}
+.stage.done i{animation:none}
+.who{font-size:13px;font-weight:800;color:var(--ink-2);margin:0 0 6px}
+.said{border:3px solid var(--ink);border-radius:16px;background:#fff;padding:14px 16px;font-size:17px;line-height:1.4;min-height:60px;box-shadow:var(--shadow);transition:filter .3s,transform .3s}
+.said .caret{display:inline-block;width:2px;height:1.1em;background:var(--ink);vertical-align:-3px;margin-left:2px;animation:blink .6s infinite}
+.said.struck{filter:grayscale(.6)}
+.said.struck .txt{text-decoration:line-through;text-decoration-thickness:3px;text-decoration-color:var(--madder)}
+.link{height:34px;width:4px;margin:0 0 0 38px;background:repeating-linear-gradient(var(--ink) 0 6px,transparent 6px 11px);border-radius:3px}
+.stone{border:3px solid var(--ink);border-radius:16px;background:var(--saffron-soft);padding:16px 18px;box-shadow:var(--shadow);position:relative}
+.stone h3{margin:0 0 8px;font-size:19px;line-height:1.25;letter-spacing:-.01em}
+.stone blockquote{margin:8px 0;padding:0 0 0 14px;border-left:5px solid var(--ink);font:italic 500 19px/1.4 var(--inscribe);clip-path:inset(0 100% 0 0)}
+.stone .plaque{font-size:13px;font-weight:600;color:var(--ink-2)}
+.why{margin:14px 2px 4px;font-size:16px}
+.fine{margin:6px 2px 0;font-size:13px;color:var(--ink-2)}
+.stamp{position:absolute;right:12px;top:2px;border:5px solid var(--madder);color:var(--madder);border-radius:10px;padding:2px 16px;font-size:32px;font-weight:800;letter-spacing:.02em;transform:rotate(-7deg);background:rgba(255,255,255,.75);pointer-events:none;z-index:3}
+.stamp.ok{border-color:var(--jade);color:#0d7d66}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.cleared{display:grid;gap:12px;justify-items:start}
+.cleared .said{width:100%}
+.offline{border:3px dashed var(--ink);border-radius:16px;padding:16px;background:#fff7e0}
+
+/* ---------- section scaffolding ---------- */
+.sec{margin:44px 0 0}
+.sechead{display:flex;align-items:end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+h2{margin:0;font-size:clamp(26px,3.2vw,40px);letter-spacing:-.03em;font-weight:800;line-height:1}
+.sub{margin:6px 0 0;color:var(--ink-2);max-width:60ch}
+
+/* ---------- away feed ---------- */
+.feed{display:grid;gap:16px}
+.conf{display:grid;grid-template-columns:1fr 46px 1fr;align-items:stretch;gap:0}
+.conf .said{box-shadow:var(--shadow);font-size:16px}
+.conf .vs{display:grid;place-items:center;font-weight:800;color:var(--madder);font-size:26px}
+.conf .stone{box-shadow:var(--shadow)}
+.conf .meta{grid-column:1/-1;font-size:13px;color:var(--ink-2);margin:6px 2px 0}
+.rd{display:flex;justify-content:space-between;gap:12px;padding:9px 14px;border:2px solid var(--line);border-radius:12px;background:var(--paper);font-size:15px}
+.rd span:last-child{color:var(--ink-2);white-space:nowrap}
+
+/* ---------- ledger ---------- */
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tab{border:2px solid var(--ink);background:var(--paper);border-radius:999px;padding:6px 14px;font-weight:700;font-size:15px;transition:transform .1s,background .15s}
+.tab b{display:inline-grid;place-items:center;min-width:22px;height:22px;border-radius:11px;background:var(--ink);color:var(--paper);font-size:12px;margin-left:6px;padding:0 6px}
+.tab[aria-pressed=true]{background:var(--saffron);box-shadow:3px 3px 0 var(--ink);transform:translate(-1px,-1px)}
+.rewind{border:3px solid var(--ink);border-radius:18px;background:var(--paper);padding:14px 18px;margin:0 0 18px;display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;box-shadow:var(--shadow)}
+.rewind label{font-weight:800}
+.rewind output{font-weight:800;min-width:15ch;text-align:right}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:12px;border-radius:8px;background:var(--line);border:2px solid var(--ink);outline-offset:6px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:30px;height:30px;border-radius:9px;background:var(--saffron);border:3px solid var(--ink);box-shadow:3px 3px 0 var(--ink);cursor:grab}
+input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:9px;background:var(--saffron);border:3px solid var(--ink)}
+.asof{display:none;margin:0 0 14px;border:3px dashed var(--ink);border-radius:14px;padding:10px 14px;background:#e8f1ff;font-weight:700}
+.asof.on{display:block}
+.wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:20px;align-items:start}
+.tab-card{position:relative;border:3px solid var(--ink);border-radius:16px;background:var(--paper);padding:16px 18px 16px;box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s}
+.tab-card:hover{transform:translate(-2px,-3px) rotate(-.4deg);box-shadow:7px 8px 0 var(--ink)}
+.tab-card.history{background:#eceff8;box-shadow:3px 3px 0 var(--ink)}
+.tab-card.history h3{text-decoration:line-through;text-decoration-color:var(--madder);text-decoration-thickness:2px}
+.tab-card.rejected{opacity:.6;border-style:dashed}
+.kind{position:absolute;top:-14px;left:16px;border:3px solid var(--ink);border-radius:8px;padding:1px 10px;font-size:13px;font-weight:800;background:var(--saffron)}
+.kind.preference{background:var(--sky)} .kind.commitment{background:var(--jade)} .kind.lesson{background:var(--plum)}
+.kind.open_question{background:var(--paper);border-style:dashed} .kind.assumption{background:var(--madder-soft)}
+.tab-card h3{margin:8px 0 6px;font-size:18px;line-height:1.25;letter-spacing:-.01em}
+.because{margin:0 0 8px;font:italic 400 16px/1.4 var(--inscribe);color:var(--ink-2)}
+.tab-card blockquote{margin:8px 0;padding:0 0 0 12px;border-left:4px solid var(--saffron);font:italic 500 17px/1.4 var(--inscribe)}
+.meta{font-size:13px;color:var(--ink-2)}
+.empty{grid-column:1/-1;border:3px dashed var(--ink);border-radius:18px;padding:26px;text-align:center;background:var(--paper);font-weight:700}
+.thunk{animation:thunk .5s cubic-bezier(.2,.9,.3,1.3)}
+.dust{position:absolute;left:50%;bottom:6px;width:8px;height:8px;border-radius:50%;background:var(--ink);opacity:0;animation:dust .6s ease-out forwards}
+
+/* ---------- learning ---------- */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+.box{border:3px solid var(--ink);border-radius:22px;background:var(--paper);padding:20px;box-shadow:var(--shadow)}
+.dials{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px}
+.dial{border:3px solid var(--ink);border-radius:16px;padding:12px;text-align:center;background:#fff}
+.dial .n{font-size:42px;font-weight:800;letter-spacing:-.04em;line-height:1}
+.dial .l{font-size:13px;color:var(--ink-2);margin-top:4px;font-weight:600}
+.ring{width:96px;height:96px;margin:0 auto 4px;display:block}
+.ring .bg{stroke:var(--line)} .ring .fg{stroke:var(--jade);stroke-linecap:round;transition:stroke-dashoffset 1.3s cubic-bezier(.2,.8,.2,1)}
+.rule{border:2px solid var(--ink);border-radius:12px;padding:10px 12px;margin-top:10px;background:#f1f6ff;font-weight:600}
+.rule small{display:block;font-weight:500;color:var(--ink-2);margin-top:4px}
+.drop{display:block;cursor:pointer;border:3px dashed var(--ink);border-radius:18px;padding:22px;text-align:center;background:#fff;transition:background .15s,transform .15s}
+.drop.over{background:var(--saffron-soft);transform:rotate(-1deg) scale(1.01)}
+.drop input{display:none}
+pre{margin:0;background:var(--ink);color:#e6ebf6;border-radius:14px;padding:14px 16px;overflow:auto;font:13px/1.55 ui-monospace,Consolas,monospace;max-height:330px;white-space:pre-wrap}
+footer{margin-top:50px;padding-top:20px;border-top:3px solid var(--ink);color:var(--ink-2);font-size:14px;max-width:88ch}
+
+/* ---------- toast + dialog ---------- */
+.toasts{position:fixed;right:18px;bottom:18px;display:grid;gap:10px;z-index:50;max-width:min(380px,90vw)}
+.toast{border:3px solid var(--ink);border-radius:14px;background:var(--paper);padding:12px 14px;box-shadow:var(--shadow);font-weight:600;animation:toastin .35s cubic-bezier(.2,.9,.3,1.2)}
+.toast.bad{background:var(--madder-soft)} .toast.good{background:var(--jade-soft)}
+dialog{border:3px solid var(--ink);border-radius:20px;background:var(--paper);color:var(--ink);padding:22px;box-shadow:var(--shadow-lg);width:min(520px,92vw)}
+dialog::backdrop{background:rgba(22,26,68,.55)}
+dialog h3{margin:0 0 6px;font-size:22px} dialog p{margin:0 0 12px;color:var(--ink-2)}
+dialog textarea{min-height:90px;box-shadow:none;font-size:16px}
+dialog .row{justify-content:flex-end}
+
+/* ---------- motion (answers actions; one orchestrated load moment) ---------- */
+@keyframes blink{to{opacity:.25}}
+@keyframes thunk{0%{transform:translateY(-26px) rotate(-1.5deg);box-shadow:12px 16px 0 var(--ink)}60%{transform:translateY(3px)}100%{transform:none}}
+@keyframes dust{0%{opacity:.8;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--dx),-26px) scale(.2)}}
+@keyframes toastin{from{transform:translateY(20px) scale(.9);opacity:0}}
+@keyframes drop-in{0%{transform:translateY(-60px) scaleY(1.25);opacity:0}55%{transform:translateY(0) scaleY(.82)}75%{transform:scaleY(1.06)}100%{transform:none;opacity:1}}
+@keyframes letter{0%{transform:translateY(-34px);opacity:0}70%{transform:translateY(3px)}100%{transform:none;opacity:1}}
+@keyframes slam{0%{transform:rotate(-7deg) scale(3.4);opacity:0}60%{transform:rotate(-7deg) scale(.9);opacity:1}100%{transform:rotate(-7deg) scale(1)}}
+@keyframes shake{10%,90%{transform:translate(-2px,1px)}20%,80%{transform:translate(4px,-2px)}30%,50%,70%{transform:translate(-6px,2px)}40%,60%{transform:translate(6px,-1px)}}
+@keyframes carve{to{clip-path:inset(0 0 0 0)}}
+@keyframes rise{from{transform:translateY(60px);opacity:0}to{transform:none;opacity:1}}
+@keyframes bob{50%{transform:translateY(-8px) rotate(.6deg)}}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(24,179,147,.7)}100%{box-shadow:0 0 0 10px rgba(24,179,147,0)}}
+@keyframes crack{0%{transform:none}30%{transform:rotate(-3deg) translateX(-6px)}100%{transform:rotate(7deg) translateY(120px);opacity:0;filter:grayscale(1)}}
+@media (prefers-reduced-motion:no-preference){
+  .deva{animation:drop-in .9s cubic-bezier(.2,.8,.3,1) both}
+  .latin span{animation:letter .55s both}
+  .latin span:nth-child(1){animation-delay:.45s}.latin span:nth-child(2){animation-delay:.52s}.latin span:nth-child(3){animation-delay:.59s}
+  .latin span:nth-child(4){animation-delay:.66s}.latin span:nth-child(5){animation-delay:.73s}.latin span:nth-child(6){animation-delay:.8s}
+  h1{animation:rise .6s .2s both}
+  .arena.hit{animation:shake .5s}
+  .stamp{animation:slam .38s cubic-bezier(.2,.9,.3,1) both}
+  .arena .stone{animation:rise .5s both}
+  .arena .stone blockquote{animation:carve .9s .45s forwards}
+  .pill i{animation:ping 1.8s infinite}
+  .idle .slab{animation:bob 4s ease-in-out infinite}
+  .feed .conf.fresh{animation:shake .5s}
+  .cracking{animation:crack .8s forwards}
+}
+@media (prefers-reduced-motion:reduce){.arena .stone blockquote{clip-path:none}}
+.conf .stone blockquote{clip-path:none}
+
+@media (max-width:900px){
+  .hero,.two{grid-template-columns:1fr}
+  .conf{grid-template-columns:1fr}.conf .vs{height:30px}
+  .rewind{grid-template-columns:1fr}.rewind output{text-align:left}
+  .dials{grid-template-columns:1fr 1fr 1fr}
+  .stamp{font-size:28px;top:56px}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <div>
-      <div class="brand"><span class="deva">स्थिर</span><h1>Sthira</h1></div>
-      <p class="tag">Your AI forgets what you decided. Sthira doesn’t.</p>
+  <header class="top">
+    <div class="mark">
+      <span class="deva">स्थिर</span>
+      <span class="latin" aria-label="Sthira"><span>S</span><span>t</span><span>h</span><span>i</span><span>r</span><span>a</span></span>
     </div>
-    <div class="badges">
-      <span class="badge">model <b id="model">…</b></span>
-      <span class="badge"><b>open-weight</b> · <b>open source</b> · MIT</span>
-      <span class="badge"><a href="https://github.com/HelloOjasMutreja/Sthira" style="color:inherit">GitHub ↗</a></span>
+    <div class="pills">
+      <span class="pill"><i></i><span id="model">connecting</span></span>
+      <span class="pill">open-weight · MIT</span>
+      <span class="pill"><button id="sound" aria-pressed="false" title="Toggle sound effects">Sound off</button></span>
+      <a class="pill" href="https://github.com/HelloOjasMutreja/Sthira">GitHub</a>
     </div>
   </header>
 
-  <section class="how">
-    <div class="step"><b>1 · Reads your AI history</b><span>ChatGPT and Claude exports, Claude Code sessions, meeting transcripts.</span></div>
-    <div class="step"><b>2 · Keeps what you settled</b><span>Decisions with reasons and a verbatim source quote. Nothing is deleted, only superseded.</span></div>
-    <div class="step"><b>3 · Speaks up</b><span>When new work contradicts a past decision, it warns and cites where you decided.</span></div>
-    <div class="step"><b>4 · Learns from you</b><span>Reject a bad extraction or correct a verdict, and the next run adapts.</span></div>
+  <section class="hero">
+    <div>
+      <h1>Is your AI about to undo what you decided?</h1>
+      <p class="lede">Paste what an agent plans to do. Sthira checks it against everything you've settled, and shows you the receipt.</p>
+      <div class="ask">
+        <label class="sr" for="text">What is the agent about to do?</label>
+        <textarea id="text" placeholder="e.g. Migrate the user store from Postgres to MongoDB to avoid joins"></textarea>
+        <div class="askrow">
+          <button class="btn go" id="go">Check it</button>
+          <span class="kbd">Ctrl + Enter, or press / to jump here</span>
+        </div>
+        <div class="chips" id="chips"></div>
+      </div>
+    </div>
+    <div class="arena" id="arena" aria-live="polite"></div>
   </section>
 
-  <div id="activity"></div>
+  <section class="sec" id="awaysec">
+    <div class="sechead">
+      <div><h2>While you were away</h2><p class="sub">Sthira watches your Claude Code sessions and an inbox folder, and speaks up the moment an agent goes against a decision.</p></div>
+      <div id="dropbox"></div>
+    </div>
+    <div class="feed" id="feed"></div>
+  </section>
 
-  <div class="grid">
-    <div>
-      <div class="card">
-        <h2>Check new work</h2>
-        <p class="sub">Paste what an AI agent is about to do, or a plan of your own. Sthira checks it against what you’ve settled.</p>
-        <textarea id="text" placeholder="e.g. Migrate the user store from Postgres to MongoDB and denormalize memberships…"></textarea>
-        <div class="chips" id="chips"></div>
-        <button class="primary" id="go">Check against my decisions</button>
-        <div class="result" id="result"></div>
-        <div class="stats" id="stats"></div>
+  <section class="sec">
+    <div class="sechead">
+      <div><h2>The wall</h2><p class="sub">Every decision you've settled, with its reason and the exact words you said. Nothing is ever deleted.</p></div>
+      <div class="tabs" id="tabs"></div>
+    </div>
+    <div class="rewind">
+      <label for="rw">Rewind</label>
+      <input id="rw" type="range" min="0" max="1000" value="1000" aria-describedby="rwout">
+      <output id="rwout">today</output>
+    </div>
+    <div class="asof" id="asof"></div>
+    <div class="wall" id="wall"></div>
+  </section>
+
+  <section class="sec">
+    <div class="two">
+      <div class="box">
+        <h2 style="font-size:30px">It learns from you</h2>
+        <p class="sub" style="margin-bottom:14px">Reject a bad catch or correct a verdict, and the rule is used from then on.</p>
+        <div class="dials" id="dials"></div>
         <div id="rules"></div>
       </div>
-
-      <div class="card" style="margin-top:20px">
-        <h2>Bring your own history</h2>
-        <p class="sub">Upload a ChatGPT/Claude <code>conversations.json</code>, a Claude Code <code>.jsonl</code> or a transcript (<code>.md</code>). The hosted demo reads up to 3 conversations; run locally with Ollama for everything.</p>
-        <div class="upload">
-          <input type="file" id="file" accept=".json,.jsonl,.md,.txt,.zip">
-          <button class="ghost" id="up">Import &amp; extract</button>
-          <span id="upmsg" class="meta"></span>
+      <div style="display:grid;gap:24px">
+        <div class="box">
+          <h2 style="font-size:30px">Feed it your history</h2>
+          <p class="sub" style="margin-bottom:14px">A ChatGPT or Claude export, a Claude Code session, or a meeting transcript.</p>
+          <label class="drop" id="drop" for="file"><b>Drop a file here</b><br><span class="meta">or click to choose · .json .jsonl .md .txt .vtt .srt .zip</span>
+            <input id="file" type="file" accept=".json,.jsonl,.md,.txt,.zip,.vtt,.srt"></label>
+          <p class="meta" id="upmsg" style="margin:10px 0 0"></p>
+        </div>
+        <div class="box">
+          <h2 style="font-size:30px">What every agent reads</h2>
+          <p class="sub" style="margin-bottom:12px"><code>sthira sync</code> writes this into <code>AGENTS.md</code> and <code>CLAUDE.md</code>. Over MCP, agents call <code>check</code> before they act.</p>
+          <pre id="agents">…</pre>
         </div>
       </div>
-
-      <div class="card" style="margin-top:20px">
-        <h2>Every agent sees it</h2>
-        <p class="sub"><code>sthira sync</code> writes this block into <code>AGENTS.md</code> / <code>CLAUDE.md</code>. Over MCP, agents call <code>check</code> before acting.</p>
-        <pre id="agents">…</pre>
-      </div>
     </div>
+  </section>
 
-    <div class="card">
-      <h2>Your ledger</h2>
-      <p class="sub">Everything Sthira extracted, each with its source. Settle what’s right; reject what isn’t (that’s how it learns).</p>
-      <div class="tabs" id="tabs"></div>
-      <div class="list" id="list"></div>
-    </div>
-  </div>
-
-  <footer>
-    Built at Hacktoberfest Hack Day Bengaluru 2026 · Track 2 · O2: Adaptive AI with Memory and Self-Correction ·
-    Runs locally on Qwen3 via Ollama; this hosted demo uses open-weight Qwen3 through an OpenAI-compatible gateway ·
-    <a href="https://github.com/HelloOjasMutreja/Sthira">source</a>
-  </footer>
+  <footer>Built at Hacktoberfest Hack Day Bengaluru 2026 for Track 2, O2: adaptive AI with memory and self-correction. It runs on Qwen3 through Ollama on your own machine. This page may be using a hosted open-weight model instead, and says which one at the top. <a href="https://github.com/HelloOjasMutreja/Sthira">Source on GitHub</a>.</footer>
 </div>
+
+<div class="toasts" id="toasts"></div>
+<dialog id="ask"><form method="dialog">
+  <h3 id="askt"></h3><p id="asks"></p><textarea id="askv"></textarea>
+  <div class="row"><button type="button" class="btn ghost" id="askno">Cancel</button><button type="button" class="btn go" id="askok">Save</button></div>
+</form></dialog>
 
 <script>
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const day = s => (s || "").slice(0, 10);
-let entries = [], filter = "settled";
-
-const examples = [
-  "Migrate the user store from Postgres to MongoDB and denormalize memberships to avoid joins.",
-  "Add email + password login with a forgot-password reset flow.",
-  "Set up the mobile app release pipeline now, before the web app is stable.",
-  "Add a dark mode toggle to the settings page.",
-];
-$("#chips").innerHTML = examples.map((e, i) => `<button class="chip" data-i="${i}">${esc(e.split(" ").slice(0, 6).join(" "))}…</button>`).join("");
-$("#chips").onclick = ev => { const i = ev.target.dataset.i; if (i !== undefined) { $("#text").value = examples[i]; run(); } };
+const day = s => { if (!s) return ""; const d = new Date(s); return isNaN(d) ? String(s).slice(0, 10) : d.toLocaleDateString("en-GB", {day: "numeric", month: "short", year: "numeric"}); };
+const ago = ts => { const s = Math.max(0, (Date.now() - Date.parse(ts)) / 1000); return s < 90 ? "just now" : s < 5400 ? Math.round(s / 60) + " min ago" : s < 129600 ? Math.round(s / 3600) + " h ago" : day(ts); };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const KIND = {decision: "Decision", preference: "Preference", commitment: "Commitment", lesson: "Lesson", assumption: "Assumption", open_question: "Open question"};
+let entries = [], tab = "settled", rewindAt = null, soundOn = false, seenAlertIds = new Set(), firstFeed = true;
 
 async function j(url, opts) {
   const r = await fetch(url, opts);
   if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || r.statusText);
   return r.json();
 }
+const post = (url, body) => j(url, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
 
-async function run() {
-  const text = $("#text").value.trim();
-  if (!text) return;
-  $("#go").disabled = true;
-  $("#result").innerHTML = `<p class="meta"><span class="spinner"></span> Checking with the open-weight model…</p>`;
+/* ---------- small delights ---------- */
+function toast(msg, kind = "") {
+  const t = document.createElement("div"); t.className = "toast " + kind; t.textContent = msg;
+  $("#toasts").appendChild(t); setTimeout(() => t.remove(), 5200);
+}
+let ac;
+function blip(kind) {
+  if (!soundOn) return;
   try {
-    const v = await j("/api/check", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({text})});
-    if (v.verdict === "contradicts") {
-      $("#result").innerHTML = `<div class="verdict bad"><h3>⚠ Contradicts ${v.conflicts.length} settled decision${v.conflicts.length > 1 ? "s" : ""}</h3>` +
-        v.conflicts.map(c => `<div class="conflict"><div class="stmt">${esc(c.entry.statement)}</div>
-          <div class="quote">“${esc(c.entry.source.quote)}”</div>
-          <div class="meta">Decided ${day(c.entry.decided_at)} in “${esc(c.entry.source.title)}”</div>
-          <p style="margin:8px 0 0">${esc(c.explanation)}</p>
-          <div class="actions"><button class="ghost" data-keep="1">Keep this decision</button><button class="ghost" data-replace="${c.entry.id}">I’ve changed my mind, replace it</button></div></div>`).join("") +
-        `<p class="meta" style="margin:10px 0 0">${v.fallback === "keyword"
-          ? "The hosted model is offline, so this is a keyword match against alternatives you explicitly rejected, not a model verdict. Run Sthira locally for the full check."
-          : v.fallback === "recorded" ? "Recorded from a real local Qwen3 run (hosted model offline)."
-          : `Flagged, then double-checked by a self-correction pass · ${esc(v.model)}`}</p><div class="actions" style="margin-top:12px"><button class="ghost" id="wrong">This isn’t a conflict, teach Sthira</button></div></div>`;
-      $("#wrong").onclick = () => teach(text);
-      $("#result").querySelectorAll("[data-keep]").forEach(b => b.onclick = () => {
-        b.closest(".actions").innerHTML = `<span class="meta">Kept. Tell your agent to follow the settled decision.</span>`; });
-      $("#result").querySelectorAll("[data-replace]").forEach(b => b.onclick = async () => {
-        const why = prompt("Why are you changing this decision? (kept with the new entry)");
-        if (why === null) return;
-        try {
-          await j(`/api/entries/${b.dataset.replace}/replace`, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({statement: text, rationale: why})});
-          b.closest(".actions").innerHTML = `<span class="meta">Superseded. The old decision is kept as history and now points to the new one.</span>`;
-          load();
-        } catch (e) { b.closest(".actions").insertAdjacentHTML("beforeend", `<span class="err">${esc(e.message)}</span>`); } });
-    } else {
-      $("#result").innerHTML = `<div class="verdict ok"><h3>✓ ${v.verdict === "unrelated" ? "No related decisions, go ahead" : "Consistent with what you’ve settled"}</h3><p class="meta" style="margin:0">Checked by ${esc(v.model)}</p></div>`;
-    }
-  } catch (e) {
-    const offline = /Model call failed/.test(e.message);
-    $("#result").innerHTML = offline
-      ? `<div class="verdict ok" style="background:var(--warn-soft);border-color:var(--line)"><h3 style="color:var(--warn)">The hosted model is busy or offline right now</h3>
-         <p style="margin:0 0 6px">No explicitly rejected alternative matched, and a full check needs the model. Try one of the example checks above (verdicts recorded from a real local Qwen3 run), or run Sthira on your machine, where everything runs locally:</p>
-         <pre>uv run sthira check "${esc(text.slice(0, 80))}"</pre></div>`
-      : `<p class="err">${esc(e.message)}</p>`;
-  }
-  $("#go").disabled = false;
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    const o = ac.createOscillator(), g = ac.createGain(); o.connect(g); g.connect(ac.destination);
+    const t = ac.currentTime;
+    if (kind === "stamp") { o.type = "square"; o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(40, t + .18); g.gain.setValueAtTime(.25, t); g.gain.exponentialRampToValueAtTime(.001, t + .25); }
+    else { o.type = "sine"; o.frequency.setValueAtTime(520, t); o.frequency.exponentialRampToValueAtTime(880, t + .12); g.gain.setValueAtTime(.18, t); g.gain.exponentialRampToValueAtTime(.001, t + .22); }
+    o.start(t); o.stop(t + .3);
+  } catch (e) {}
 }
-$("#go").onclick = run;
-$("#text").addEventListener("keydown", e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) run(); });
-
-async function teach(text) {
-  const note = prompt("What should Sthira learn? (e.g. 'caching layers are fine, only the primary store matters')");
-  if (!note) return;
-  try {
-    await j("/api/correct", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({text, note})});
-    $("#result").insertAdjacentHTML("beforeend", `<p class="meta">Noted. Future checks will use this correction.</p>`);
-    loadStats(); loadRules();
-  } catch (e) { $("#result").insertAdjacentHTML("beforeend", `<p class="err">Couldn’t save the correction: ${esc(e.message)}</p>`); }
+$("#sound").onclick = () => { soundOn = !soundOn; $("#sound").textContent = soundOn ? "Sound on" : "Sound off"; $("#sound").setAttribute("aria-pressed", soundOn); blip("ok"); };
+function countUp(el, to, ms = 900, suffix = "") {
+  if (reduced || !isFinite(to)) { el.textContent = to + suffix; return; }
+  const t0 = performance.now();
+  const step = t => { const p = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - p, 3); el.textContent = Math.round(to * e) + suffix; if (p < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+function ask(title, sub, placeholder, okText = "Save") {
+  // Resolves from explicit button handlers (not the dialog's close event), so it behaves the same in every WebView.
+  return new Promise(resolve => {
+    const d = $("#ask"), ta = $("#askv"); let done = false;
+    $("#askt").textContent = title; $("#asks").textContent = sub; ta.value = ""; ta.placeholder = placeholder; $("#askok").textContent = okText;
+    const finish = v => { if (done) return; done = true; $("#askok").onclick = $("#askno").onclick = d.oncancel = d.onclose = ta.onkeydown = null; if (d.open) d.close(); resolve(v); };
+    $("#askok").onclick = () => finish(ta.value.trim());
+    $("#askno").onclick = () => finish(null);
+    d.oncancel = () => finish(null); d.onclose = () => finish(null);
+    ta.onkeydown = e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) finish(ta.value.trim()); };
+    d.showModal(); ta.focus();
+  });
 }
 
-function renderTabs() {
-  const counts = s => entries.filter(e => e.status === s).length;
-  const tabs = [["settled", "Settled"], ["proposed", "To review"], ["superseded", "Superseded"], ["rejected", "Rejected"]];
-  $("#tabs").innerHTML = tabs.map(([k, l]) => `<button class="tab ${filter === k ? "on" : ""}" data-k="${k}">${l}<span class="c">${counts(k)}</span></button>`).join("");
-}
-$("#tabs").onclick = e => { const k = e.target.closest(".tab")?.dataset.k; if (k) { filter = k; render(); } };
+/* ---------- the check (the one big moment) ---------- */
+const EXAMPLES = [
+  "Migrate the user store from Postgres to MongoDB and denormalize memberships to avoid joins.",
+  "Add email and password login with a forgot-password reset flow.",
+  "Set up the mobile release pipeline now, before the web app is stable.",
+  "Add a dark mode toggle to the settings page.",
+];
+$("#chips").innerHTML = EXAMPLES.map((e, i) => `<button class="chip" data-i="${i}">${esc(e.split(" ").slice(0, 5).join(" "))}…</button>`).join("");
+$("#chips").onclick = ev => { const i = ev.target.dataset.i; if (i !== undefined) { $("#text").value = EXAMPLES[i]; runCheck(); } };
+$("#go").onclick = () => runCheck();
+$("#text").addEventListener("keydown", e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) runCheck(); });
+addEventListener("keydown", e => { if (e.key === "/" && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) { e.preventDefault(); $("#text").focus(); } });
 
-function render() {
-  renderTabs();
-  const list = entries.filter(e => e.status === filter).reverse();
-  $("#list").innerHTML = list.length ? list.map(e => `
-    <div class="entry ${e.status}">
-      <div class="row"><span class="kind">${e.kind.replace("_", " ")}</span><span class="st ${e.status}">${e.status}</span></div>
-      <div class="stmt">${esc(e.statement)}</div>
-      ${e.rationale ? `<p class="why">Why: ${esc(e.rationale)}</p>` : ""}
-      <div class="quote" style="font-size:16px">“${esc(e.source.quote)}”</div>
-      <div class="meta">${esc(e.source.title)} · ${day(e.decided_at)}${e.alternatives_rejected?.length ? " · rejected: " + esc(e.alternatives_rejected.join(", ")) : ""}</div>
-      ${e.status === "proposed" ? `<div class="actions"><button class="ghost" data-a="settle" data-id="${e.id}">Settle</button><button class="ghost" data-a="reject" data-id="${e.id}">Reject</button></div>` : ""}
-    </div>`).join("") : `<p class="meta">Nothing here.</p>`;
+function renderIdle() {
+  const s = entries.filter(e => e.status === "settled");
+  const e = s.length ? s[Math.floor(Math.random() * s.length)] : null;
+  $("#arena").innerHTML = `<div class="idle">
+    ${e ? `<div class="slab"><b>${esc(e.statement)}</b><q>“${esc(e.source.quote)}”</q></div>` : ""}
+    <small>${e ? "One of the things you've settled. Check a plan and Sthira will tell you if it goes against any of them." : "Nothing is settled yet. Feed Sthira some history below, then check a plan against it."}</small></div>`;
 }
-$("#list").onclick = async e => {
-  const b = e.target.closest("button[data-a]"); if (!b) return;
-  const note = b.dataset.a === "reject" ? (prompt("Why is this wrong? (helps Sthira learn)") || null) : null;
-  b.disabled = true;
-  try {
-    await j(`/api/entries/${b.dataset.id}/review`, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({action: b.dataset.a, note})});
-    load();
-  } catch (err) {
-    b.disabled = false;
-    b.closest(".actions").insertAdjacentHTML("beforeend", `<span class="err">${esc(err.message)}</span>`);
-  }
-};
-
-async function loadStats() {
-  const s = await j("/api/stats");
-  const pct = x => x == null ? "–" : Math.round(x * 100) + "%";
-  $("#stats").innerHTML = `
-    <div class="stat"><div class="n">${s.entries?.settled ?? 0}</div><div class="l">settled entries</div></div>
-    <div class="stat"><div class="n">${s.corrections}</div><div class="l">corrections learned</div></div>
-    <div class="stat"><div class="n">${pct(s.precision_before)} <span class="arrow">→ ${pct(s.precision_after)}</span></div><div class="l">extraction precision, before → after learning</div></div>`;
+const stageBar = () => `<div class="stages"><span class="stage on" data-s="0"><i></i>Searching your decisions</span><span class="stage" data-s="1"><i></i>Judging the plan</span><span class="stage" data-s="2"><i></i>Double-checking</span></div>`;
+function setStage(n, done) {
+  document.querySelectorAll("#arena .stage").forEach(s => { const i = +s.dataset.s; s.className = "stage" + (done || i < n ? " done" : i === n ? " on" : ""); });
+}
+async function typeInto(el, text) {
+  if (reduced) { el.textContent = text; return; }
+  const per = Math.max(8, Math.min(28, 1100 / text.length));
+  for (let i = 1; i <= text.length; i++) { el.textContent = text.slice(0, i); await sleep(per); }
 }
 
-async function loadRules() {
-  const rs = await j("/api/rules");
-  $("#rules").innerHTML = rs.length ? `<h3 style="font-family:'Instrument Serif',serif;font-weight:400;font-size:20px;margin:18px 0 6px">Learned from you</h3>
-    <p class="meta" style="margin:0 0 8px">Rules Sthira took from your corrections. It applies them on every future run.</p>` +
-    rs.map(r => `<div class="entry" style="margin-bottom:8px"><div class="row"><span class="kind">${esc(r.applies_to)}</span>
-      <span class="meta">taught ${r.examples}×</span></div><div class="stmt">${esc(r.rule)}</div>
-      ${r.example ? `<div class="meta">e.g. “${esc(r.example.slice(0, 110))}”</div>` : ""}</div>`).join("") : "";
+let checking = false;
+async function runCheck() {
+  const text = $("#text").value.trim(); if (!text || checking) return;
+  checking = true; $("#go").disabled = true;
+  const arena = $("#arena");
+  arena.innerHTML = `${stageBar()}<p class="who">Your agent plans to</p><div class="said"><span class="txt"></span><span class="caret"></span></div>`;
+  const typing = typeInto(arena.querySelector(".txt"), text);
+  const timers = [setTimeout(() => setStage(1), 900), setTimeout(() => setStage(2), 2600)];
+  let v = null, err = null;
+  try { v = await post("/api/check", {text}); } catch (e) { err = e; }
+  timers.forEach(clearTimeout); await typing; setStage(2, true); await sleep(reduced ? 0 : 280);
+  checking = false; $("#go").disabled = false;
+  if (err) return renderOffline(err, text);
+  v.verdict === "contradicts" ? renderOverruled(v, text) : renderCleared(v);
 }
 
-const ago = ts => { const s = Math.max(0, (Date.now() - Date.parse(ts)) / 1000); return s < 90 ? "just now" : s < 5400 ? Math.round(s / 60) + " min ago" : s < 129600 ? Math.round(s / 3600) + " h ago" : day(ts); };
-
-async function loadActivity() {
-  let feed = [];
-  try { feed = await j("/api/activity"); } catch (e) { return; }
-  const box = $("#activity");
-  const demo = (await j("/api/meta").catch(() => ({}))).demo_drop;
-  const dropBtn = demo ? `<button class="primary" id="drop" style="margin:4px 0 14px">▶ Simulate: an agent works on the app tonight</button>
-    <span class="meta" id="dropmsg" style="margin-left:10px"></span>` : "";
-  if (!feed.length && !demo) { box.innerHTML = ""; return; }
-  const item = a => a.kind === "alert"
-    ? `<div class="verdict bad" style="margin-bottom:10px"><h3>⚠ ${esc(a.title)} · <span class="meta">${ago(a.ts)}</span></h3>
-        <div class="meta">The agent said</div><div style="margin:2px 0 8px">“${esc((a.detail.agent_said || "").slice(0, 220))}”</div>
-        <div class="meta">That goes against what you decided</div><div class="stmt">${esc(a.detail.decision)}</div>
-        <div class="quote">“${esc(a.detail.quote)}”</div>
-        <div class="meta">Decided ${day(a.detail.decided_at)} in “${esc(a.detail.source)}”</div>
-        ${a.detail.why ? `<p style="margin:8px 0 0">${esc(a.detail.why)}</p>` : ""}</div>`
-    : `<div class="row" style="padding:6px 0;border-top:1px solid var(--line)"><span>${a.kind === "error" ? "✗" : "✓"} ${esc(a.title)}</span><span class="meta">${ago(a.ts)}</span></div>`;
-  // Once the feed is on screen and this window is in front, the alerts count as seen (clears the window badge).
-  if (feed.some(a => a.kind === "alert") && document.visibilityState === "visible" && document.hasFocus()) {
-    fetch("/api/activity/seen", {method: "POST"}).catch(() => {});
-  }
-  const alerts = feed.filter(a => a.kind === "alert").slice(0, 3), rest = feed.filter(a => a.kind !== "alert").slice(0, 6);
-  box.innerHTML = `<div class="card" style="margin-bottom:20px"><h2>While you were away</h2>
-    <p class="sub">Sthira is watching your Claude Code sessions and your inbox folder in the background.</p>
-    ${dropBtn}${alerts.map(item).join("")}${rest.map(item).join("")}</div>`;
-  const b = $("#drop");
-  if (b) b.onclick = async () => {
-    b.disabled = true;
-    $("#dropmsg").innerHTML = `<span class="spinner"></span> Session dropped in the inbox. Sthira reads it in a few seconds…`;
-    try { await j("/api/demo/drop", {method: "POST"}); } catch (e) { $("#dropmsg").textContent = e.message; }
-    setTimeout(() => { b.disabled = false; }, 8000);
+function renderOffline(err, text) {
+  const down = /Model call failed|Rate limited/.test(err.message);
+  $("#arena").innerHTML = `<div class="offline"><h3 style="margin:0 0 6px">${down ? "The model is busy right now" : "That didn't work"}</h3>
+    <p style="margin:0 0 8px">${down ? "The hosted model is rate limited or offline. The example chips still work, or run Sthira on your own machine:" : esc(err.message)}</p>
+    ${down ? `<pre>uv run sthira check "${esc(text.slice(0, 80))}"</pre>` : ""}</div>`;
+}
+function fineNote(v) {
+  return v.fallback === "keyword" ? "The model is offline, so this is a keyword match on alternatives you rejected. It is not a model verdict."
+       : v.fallback === "recorded" ? "Recorded from a real local Qwen3 run. The hosted model is offline."
+       : `Flagged by ${esc(v.model)}, then double-checked by a second pass.`;
+}
+async function renderOverruled(v, text) {
+  const c = v.conflicts[0], e = c.entry, arena = $("#arena");
+  arena.innerHTML = `<div class="stamp" id="stamp">OVERRULED</div>
+    <p class="who">Your agent plans to</p><div class="said struck"><span class="txt">${esc(text)}</span></div>
+    <div class="link" aria-hidden="true"></div>
+    <div class="stone" id="stone"><p class="who" style="margin-bottom:4px">But you decided</p>
+      <h3>${esc(e.statement)}</h3><blockquote>“${esc(e.source.quote)}”</blockquote>
+      <div class="plaque">${day(e.decided_at)} · ${esc(e.source.title)}</div></div>
+    <p class="why">${esc(c.explanation)}</p>
+    ${v.conflicts.length > 1 ? `<p class="fine">${v.conflicts.length - 1} more decision${v.conflicts.length > 2 ? "s" : ""} also conflict.</p>` : ""}
+    <div class="row"><button class="btn jade small" id="keep">Keep my decision</button><button class="btn small" id="change">I changed my mind</button><button class="btn small ghost" id="teach">Not a conflict</button></div>
+    <p class="fine">${fineNote(v)}</p>`;
+  arena.classList.remove("hit"); void arena.offsetWidth; arena.classList.add("hit"); blip("stamp");
+  $("#keep").onclick = () => { $("#stamp").className = "stamp ok"; $("#stamp").textContent = "KEPT"; $(".said.struck").classList.add("struck"); $(".row").remove(); toast("Kept. Tell your agent to follow it.", "good"); blip("ok"); };
+  $("#change").onclick = async () => {
+    const why = await ask("Why are you changing this?", "Your reason is saved with the new decision. The old one stays in history.", "e.g. We need multi-region writes now");
+    if (why === null) return;
+    try {
+      $("#stone").classList.add("cracking"); await sleep(reduced ? 0 : 700);
+      await post(`/api/entries/${e.id}/replace`, {statement: text, rationale: why});
+      toast("Decision replaced. The old one is kept in history.", "good"); blip("ok"); await load(); renderIdle();
+    } catch (er) { $("#stone").classList.remove("cracking"); toast(er.message, "bad"); }
+  };
+  $("#teach").onclick = async () => {
+    const note = await ask("What should Sthira learn?", "State it as a rule. It is applied to every later check.", "e.g. A cache in front of a database doesn't change which database we use", "Teach it");
+    if (!note) return;
+    try { await post("/api/correct", {text, note}); toast("Learned. Future checks will use that rule.", "good"); loadStats(); loadRules(); } catch (er) { toast(er.message, "bad"); }
   };
 }
-setInterval(loadActivity, 5000);
-
-async function load() {
-  loadActivity();
-  entries = await j("/api/entries");
-  render();
-  loadStats();
-  loadRules();
-  $("#agents").textContent = (await j("/api/agents-md")).markdown;
+function renderCleared(v) {
+  const unrelated = v.verdict === "unrelated";
+  $("#arena").innerHTML = `<div class="stamp ok">CLEARED</div><div class="cleared">
+    <h3 style="margin:56px 0 0;font-size:24px;letter-spacing:-.02em">${unrelated ? "Nothing you've settled covers this." : "This follows what you've settled."}</h3>
+    <p style="margin:0;color:var(--ink-2)">${unrelated ? "No related decisions, so go ahead." : "The plan agrees with every related decision."}</p>
+    <p class="fine">Checked by ${esc(v.model)}</p></div>`;
+  $("#arena").classList.remove("hit"); blip("ok");
 }
 
-$("#up").onclick = async () => {
-  const f = $("#file").files[0]; if (!f) return;
-  const fd = new FormData(); fd.append("file", f);
-  $("#upmsg").innerHTML = `<span class="spinner"></span> Importing…`;
-  try {
-    $("#upmsg").innerHTML = `<span class="spinner"></span> Importing and extracting with the open-weight model…`;
-    const out = await j("/api/import", {method: "POST", body: fd});
-    $("#upmsg").textContent = `${out.messages} messages in · ${out.entries.length} new entries to review.`;
-    filter = "proposed"; load();
-  } catch (e) {
-    $("#upmsg").innerHTML = /Model call failed/.test(e.message)
-      ? `<span class="err">The hosted model is busy or offline, so extraction can’t run right now. Run Sthira locally with Ollama to import your history.</span>`
-      : `<span class="err">${esc(e.message)}</span>`;
+/* ---------- the wall ---------- */
+function validAt(e, t) {
+  const born = Date.parse(e.decided_at || e.recorded_at); if (t < born) return false;
+  if (e.status === "rejected") return false;
+  if (e.status === "superseded" && e.superseded_by) {
+    const n = entries.find(x => x.id === e.superseded_by); if (n) return t < Date.parse(n.decided_at || n.recorded_at);
   }
+  return true;
+}
+function bounds() {
+  const ts = entries.map(e => Date.parse(e.decided_at || e.recorded_at)).filter(Boolean);
+  return ts.length ? [Math.min(...ts), Math.max(...ts, Date.now())] : [Date.now() - 864e5, Date.now()];
+}
+function card(e, rewound) {
+  const hist = e.status === "superseded";
+  const acts = e.status === "proposed" ? `<div class="row" style="margin-top:12px"><button class="btn jade small" data-a="settle" data-id="${e.id}">Settle it</button><button class="btn small ghost" data-a="reject" data-id="${e.id}">Not a decision</button></div>` : "";
+  return `<article class="tab-card ${hist ? "history" : ""} ${e.status === "rejected" ? "rejected" : ""}" data-id="${e.id}">
+    <span class="kind ${e.kind}">${KIND[e.kind] || e.kind}</span>
+    <h3>${esc(e.statement)}</h3>
+    ${e.rationale ? `<p class="because">Reason: ${esc(e.rationale.replace(/^because\s+/i, ""))}</p>` : ""}
+    <blockquote>“${esc(e.source.quote)}”</blockquote>
+    <div class="meta">${day(e.decided_at)} · ${esc(e.source.title)}${e.alternatives_rejected && e.alternatives_rejected.length ? ` · not ${esc(e.alternatives_rejected.join(", "))}` : ""}</div>
+    ${acts}</article>`;
+}
+function renderTabs() {
+  const n = s => entries.filter(e => e.status === s).length;
+  const defs = [["settled", "Settled"], ["proposed", "To review"], ["superseded", "History"], ["rejected", "Rejected"]];
+  $("#tabs").innerHTML = defs.map(([k, l]) => `<button class="tab" data-k="${k}" aria-pressed="${tab === k && rewindAt === null}">${l}<b>${n(k)}</b></button>`).join("");
+}
+$("#tabs").onclick = e => { const k = e.target.closest(".tab")?.dataset.k; if (k) { tab = k; $("#rw").value = 1000; rewindAt = null; renderWall(); } };
+function renderWall() {
+  renderTabs(); const wall = $("#wall"), asof = $("#asof");
+  let list;
+  if (rewindAt !== null) {
+    list = entries.filter(e => validAt(e, rewindAt)).reverse();
+    asof.className = "asof on"; asof.textContent = `As of ${day(new Date(rewindAt))}, you had ${list.length} decision${list.length === 1 ? "" : "s"} in force. Drag right to come back to today.`;
+  } else { list = entries.filter(e => e.status === tab).reverse(); asof.className = "asof"; }
+  wall.innerHTML = list.length ? list.map(e => card(e)).join("")
+    : `<div class="empty">${tab === "proposed" && rewindAt === null ? "Nothing to review. Drop a file in the inbox below and new catches appear here." : "Nothing here yet."}</div>`;
+}
+$("#rw").oninput = e => {
+  const [a, b] = bounds(), p = +e.target.value / 1000;
+  if (p >= .995) { rewindAt = null; $("#rwout").textContent = "today"; }
+  else { rewindAt = a + (b - a) * p; $("#rwout").textContent = day(new Date(rewindAt)); }
+  renderWall();
+};
+$("#wall").onclick = async e => {
+  const b = e.target.closest("button[data-a]"); if (!b) return;
+  const id = b.dataset.id, cardEl = b.closest(".tab-card");
+  let note = null;
+  if (b.dataset.a === "reject") {
+    note = await ask("Why isn't this a decision?", "Your reason becomes a rule: Sthira skips similar things from now on.", "e.g. Small talk about a trip, not a project decision", "Reject it");
+    if (note === null) return;
+  }
+  b.disabled = true;
+  try {
+    await post(`/api/entries/${id}/review`, {action: b.dataset.a, note: note || null});
+    if (b.dataset.a === "settle") {
+      cardEl.classList.add("thunk");
+      for (let i = 0; i < 9; i++) { const d = document.createElement("i"); d.className = "dust"; d.style.cssText = `--dx:${(i - 4) * 16}px;left:${20 + i * 9}%`; cardEl.appendChild(d); }
+      blip("ok"); toast("Settled. It now guards your agents.", "good"); await sleep(reduced ? 0 : 520);
+    } else toast("Got it. Sthira will skip things like that.", "good");
+    await load();
+  } catch (er) { b.disabled = false; toast(er.message, "bad"); }
 };
 
-j("/api/meta").then(m => $("#model").textContent = m.model);
+/* ---------- while you were away ---------- */
+function conf(a, fresh) {
+  const d = a.detail;
+  return `<div class="conf ${fresh ? "fresh" : ""}">
+    <div><p class="who">${esc(a.title.replace(/^An agent in /, "Agent in ").replace(/ is going against a decision$/, ""))}</p><div class="said">“${esc((d.agent_said || "").slice(0, 230))}”</div></div>
+    <div class="vs" aria-hidden="true">≠</div>
+    <div><p class="who">You decided</p><div class="stone"><h3 style="font-size:17px">${esc(d.decision)}</h3><blockquote style="clip-path:none;animation:none;font-size:17px">“${esc(d.quote)}”</blockquote><div class="plaque">${day(d.decided_at)} · ${esc(d.source)}</div></div></div>
+    <div class="meta">${ago(a.ts)}${d.why ? " · " + esc(d.why) : ""}</div></div>`;
+}
+async function loadActivity() {
+  let feed = []; try { feed = await j("/api/activity"); } catch (e) { return; }
+  const meta = await j("/api/meta").catch(() => ({}));
+  $("#dropbox").innerHTML = meta.demo_drop ? `<button class="btn go" id="dropbtn">Send an agent to work on the app</button>` : "";
+  const b = $("#dropbtn");
+  if (b) b.onclick = async () => { b.disabled = true; toast("An agent session landed in the inbox. Sthira is reading it…"); try { await j("/api/demo/drop", {method: "POST"}); } catch (e) { toast(e.message, "bad"); } setTimeout(() => b.disabled = false, 7000); };
+  const alerts = feed.filter(a => a.kind === "alert"), rest = feed.filter(a => a.kind !== "alert").slice(0, 4);
+  const fresh = alerts.filter(a => !seenAlertIds.has(a.id));
+  if (!firstFeed && fresh.length) { toast(`Caught: an agent just went against “${fresh[0].detail.decision.slice(0, 60)}”`, "bad"); blip("stamp"); }
+  alerts.forEach(a => seenAlertIds.add(a.id));
+  // Re-render only when the feed changed: replacing the DOM on every poll would replay the entrance animations.
+  const sig = feed.slice(0, 8).map(a => a.id).join(",") + "|" + Math.floor(Date.now() / 60000);
+  if (sig !== loadActivity.sig) {
+    loadActivity.sig = sig;
+    $("#feed").innerHTML = (!alerts.length && !rest.length)
+      ? `<div class="empty">Quiet so far. When an agent goes against a decision, it shows up here with the receipt.</div>`
+      : alerts.slice(0, 3).map(a => conf(a, !firstFeed && fresh.includes(a))).join("") + rest.map(a => `<div class="rd"><span>${a.kind === "error" ? "Couldn't read" : "Read"} ${esc(a.title.replace(/^(Read|Couldn't read) /, ""))}</span><span>${ago(a.ts)}</span></div>`).join("");
+  }
+  firstFeed = false;
+  if (alerts.length && document.visibilityState === "visible" && document.hasFocus()) fetch("/api/activity/seen", {method: "POST"}).catch(() => {});
+}
+setInterval(loadActivity, 4000);
+
+/* ---------- learning ---------- */
+async function loadStats() {
+  const s = await j("/api/stats").catch(() => null); if (!s) return;
+  const pct = x => x == null ? null : Math.round(x * 100);
+  const after = pct(s.precision_after) ?? pct(s.precision_before), before = pct(s.precision_before);
+  const C = 2 * Math.PI * 40;
+  $("#dials").innerHTML = `
+    <div class="dial"><div class="n" id="d1">0</div><div class="l">decisions settled</div></div>
+    <div class="dial"><div class="n" id="d2">0</div><div class="l">corrections learned</div></div>
+    <div class="dial"><svg class="ring" viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="40" fill="none" stroke-width="11"/><circle class="fg" id="arc" cx="50" cy="50" r="40" fill="none" stroke-width="11" transform="rotate(-90 50 50)" stroke-dasharray="${C}" stroke-dashoffset="${C}"/>
+      <text x="50" y="57" text-anchor="middle" font-size="24" font-weight="800" fill="#161a44" id="d3">${after ?? "–"}${after != null ? "%" : ""}</text></svg>
+      <div class="l">${before != null && after != null ? `precision, up from ${before}%` : "precision"}</div></div>`;
+  countUp($("#d1"), s.entries?.settled ?? 0); countUp($("#d2"), s.corrections ?? 0);
+  if (after != null) requestAnimationFrame(() => setTimeout(() => $("#arc").setAttribute("stroke-dashoffset", C * (1 - after / 100)), 60));
+}
+async function loadRules() {
+  const rs = await j("/api/rules").catch(() => []);
+  $("#rules").innerHTML = rs.length ? rs.map(r => `<div class="rule">${esc(r.rule)}<small>${esc(r.applies_to)} · taught ${r.examples}×${r.example ? ` · e.g. “${esc(r.example.slice(0, 80))}”` : ""}</small></div>`).join("")
+    : `<div class="rule">No rules yet. Reject something with a reason and it shows up here.<small>That's how Sthira gets better at your project.</small></div>`;
+}
+
+/* ---------- upload ---------- */
+async function upload(f) {
+  if (!f) return; const fd = new FormData(); fd.append("file", f);
+  $("#upmsg").textContent = "Reading it with the open-weight model…";
+  try {
+    const out = await j("/api/import", {method: "POST", body: fd});
+    $("#upmsg").textContent = `${out.messages} messages read, ${out.entries.length} new thing${out.entries.length === 1 ? "" : "s"} to review.`;
+    if (out.entries.length) { toast(`${out.entries.length} new to review. Open "To review".`, "good"); tab = "proposed"; rewindAt = null; $("#rw").value = 1000; }
+    await load();
+  } catch (e) {
+    $("#upmsg").textContent = /Model call failed|Rate limited/.test(e.message) ? "The model is busy or offline, so extraction can't run right now. Run Sthira locally to import your history." : e.message;
+  }
+}
+$("#file").onchange = e => upload(e.target.files[0]);
+const dz = $("#drop");
+["dragenter", "dragover"].forEach(t => dz.addEventListener(t, e => { e.preventDefault(); dz.classList.add("over"); }));
+["dragleave", "drop"].forEach(t => dz.addEventListener(t, e => { e.preventDefault(); dz.classList.remove("over"); }));
+dz.addEventListener("drop", e => upload(e.dataTransfer.files[0]));
+
+/* ---------- boot ---------- */
+async function load() {
+  entries = await j("/api/entries");
+  renderWall(); loadStats(); loadRules(); loadActivity();
+  if (!checking && !$("#arena").children.length) renderIdle();
+  $("#agents").textContent = (await j("/api/agents-md").catch(() => ({markdown: ""}))).markdown;
+}
+j("/api/meta").then(m => $("#model").textContent = m.model).catch(() => $("#model").textContent = "offline");
 load();
 </script>
 </body>
