@@ -39,7 +39,8 @@ async def vercel_oidc(request, call_next):
 
 def con():
     c = store.connect()
-    if c.execute("SELECT COUNT(*) FROM entries").fetchone()[0] == 0 and (ROOT / "demo" / "seed.json").exists():
+    seedable = not os.environ.get("STHIRA_NO_SEED") and (ROOT / "demo" / "seed.json").exists()
+    if seedable and c.execute("SELECT COUNT(*) FROM entries").fetchone()[0] == 0:
         with _lock:
             if c.execute("SELECT COUNT(*) FROM entries").fetchone()[0] == 0:
                 seed.load(c, ROOT / "demo" / "seed.json")

@@ -288,6 +288,17 @@ def watch(
         console.print("Stopped.")
 
 
+@app.command("app")
+def desktop_app(
+    demo: bool = typer.Option(False, "--demo", help="Start with the Acme Notes demo ledger instead of your own"),
+    no_watch: bool = typer.Option(False, "--no-watch", help="Don't watch Claude Code sessions and the inbox folder"),
+):
+    """Open Sthira as a desktop app: the UI in a native window, with the watcher keeping your ledger current."""
+    from . import desktop
+
+    desktop.main(demo=demo, watch_files=not no_watch)
+
+
 @app.command()
 def where():
     """Show where the ledger lives."""
