@@ -112,14 +112,22 @@ def _call_with_patience(system: str, user: str):
 
 
 def extract(con: sqlite3.Connection, limit: int | None = None, on_progress=None,
-            source_ids: list[str] | None = None, errors: list[str] | None = None) -> list[Entry]:
-    """`errors`, if given, receives one line per chunk that could not be read (they stay pending for the next run)."""
+            source_ids: list[str] | None = None, errors: list[str] | None = None, on_chunk=None) -> list[Entry]:
+    """`errors`, if given, receives one line per chunk that could not be read (they stay pending for the next run).
+    `on_chunk`, if given, is called with a dict per step so a UI can show real progress:
+    {"phase": "start", "total", "conversations", "messages"}, then per chunk {"phase": "read" | "skip", "done", "total",
+    "title", "found": [{"kind", "statement", "quote"}]}, and {"phase": "split", "total"} when a dense chunk is halved."""
     convs = store.pending_conversations(con, source_ids)
     if limit:
         convs = convs[:limit]
     run_id = store.start_run(con, "extract")
     guidance = feedback.extraction_guidance(con)
     created: list[Entry] = []
+    total = sum(len(_chunks(c["messages"])) for c in convs)
+    done = 0
+    if on_chunk:
+        on_chunk({"phase": "start", "total": total, "conversations": len(convs),
+                  "messages": sum(len(c["messages"]) for c in convs)})
     for ci, conv in enumerate(convs):
         work = _chunks(conv["messages"])
         while work:
@@ -140,10 +148,18 @@ def extract(con: sqlite3.Connection, limit: int | None = None, on_progress=None,
                     # Typically output cut off mid-JSON on a dense chunk: read each half separately instead.
                     half = len(chunk) // 2
                     work[0:0] = [chunk[:half], chunk[half:]]
+                    total += 1  # one chunk became two
+                    if on_chunk:
+                        on_chunk({"phase": "split", "total": total})
                     continue
                 if errors is not None:
                     errors.append(f"{conv['conv_title']}: {e}"[:240])
+                done += 1
+                if on_chunk:
+                    on_chunk({"phase": "skip", "done": done, "total": total, "title": conv["conv_title"], "found": [],
+                              "error": str(e)[:160]})
                 continue
+            before = len(created)
             for item in data.get("entries", []):
                 idx = item.get("msg", -1)
                 msg = chunk[idx] if isinstance(idx, int) and 0 <= idx < len(chunk) else None
@@ -173,6 +189,11 @@ def extract(con: sqlite3.Connection, limit: int | None = None, on_progress=None,
                 )
                 created.append(store.insert_entry(con, entry, run_id))
             store.mark_extracted(con, [m["id"] for m in chunk])
+            done += 1
+            if on_chunk:
+                on_chunk({"phase": "read", "done": done, "total": total, "title": conv["conv_title"],
+                          "found": [{"kind": e.kind, "statement": e.statement, "quote": e.source.quote}
+                                    for e in created[before:]]})
     return created
 
 

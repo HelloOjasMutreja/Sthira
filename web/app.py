@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
+import queue
 import threading
+import time
 from pathlib import Path
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import HTMLResponse, Response, StreamingResponse
 from pydantic import BaseModel
 
 HERE = Path(__file__).resolve().parent
@@ -25,7 +28,7 @@ if os.environ.get("VERCEL") and "STHIRA_PROVIDER" not in os.environ:
     os.environ["STHIRA_PROVIDER"] = "openai"
     os.environ.setdefault("STHIRA_MODEL", "alibaba/qwen-3-32b")
 
-from sthira import api, config, llm, store  # noqa: E402
+from sthira import api, ask as ask_mod, config, llm, sarvam, store  # noqa: E402
 
 from . import fallback, seed  # noqa: E402
 
@@ -54,7 +57,8 @@ async def vercel_oidc(request, call_next):
 
 def con():
     c = store.connect()
-    if c.execute("SELECT COUNT(*) FROM entries").fetchone()[0] == 0 and (ROOT / "demo" / "seed.json").exists():
+    seedable = not os.environ.get("STHIRA_NO_SEED") and (ROOT / "demo" / "seed.json").exists()
+    if seedable and c.execute("SELECT COUNT(*) FROM entries").fetchone()[0] == 0:
         with _lock:
             if c.execute("SELECT COUNT(*) FROM entries").fetchone()[0] == 0:
                 seed.load(c, ROOT / "demo" / "seed.json")
@@ -86,7 +90,9 @@ def index():
 
 @app.get("/api/meta")
 def meta():
-    return {"model": config.model(), "provider": config.provider(), "version": "0.1.0"}
+    return {"model": config.model(), "provider": config.provider(), "version": "0.1.0",
+            "demo_drop": bool(os.environ.get("STHIRA_DEMO_DROP")),
+            "voice": sarvam.enabled(), "languages": sarvam.LANGS}
 
 
 @app.get("/api/entries")
@@ -169,6 +175,53 @@ async def ingest(file: UploadFile = File(...), kind: str | None = Form(None)):
     return api.ingest_upload(file.filename or "upload.json", data, kind or None, con=con())
 
 
+def _seconds_per_chunk_hint() -> float:
+    """A first guess for the ETA before any chunk has finished: a hosted model is quick, a laptop CPU is not."""
+    return 4.0 if config.provider() == "openai" else 25.0
+
+
+@app.post("/api/import/stream")
+async def import_stream(file: UploadFile = File(...), kind: str | None = Form(None)):
+    """Import and extract, reporting progress as it happens (newline-delimited JSON), so the UI can show real
+    progress and an honest ETA instead of a spinner. One request, one worker thread, so it behaves the same on
+    serverless hosts where each instance has its own /tmp."""
+    data = await file.read()
+    if len(data) > 4_000_000:
+        raise HTTPException(413, "File too large for the hosted demo (4 MB). Run Sthira locally for full exports.")
+    name = file.filename or "upload.json"
+    q: queue.Queue = queue.Queue()
+    limit = 3 if os.environ.get("VERCEL") else None  # the hosted demo reads at most 3 conversations
+
+    def worker():
+        t0 = time.time()
+        try:
+            c = con()
+            r = api.ingest_upload(name, data, kind or None, con=c)
+            q.put({"event": "parsed", "messages": r["messages"], "sources": r["sources"],
+                   "seconds_per_chunk_hint": _seconds_per_chunk_hint(), "model": config.model()})
+            skipped: list[str] = []
+            entries = api.extract(limit, con=c, source_ids=r["source_ids"], errors=skipped,
+                                  on_chunk=lambda ev: q.put({"event": "chunk", **ev}))
+            q.put({"event": "done", "entries": [e.model_dump() for e in entries], "skipped": len(skipped),
+                   "elapsed": round(time.time() - t0, 1)})
+        except Exception as e:  # surface it to the UI instead of a dropped connection
+            q.put({"event": "error", "message": f"{type(e).__name__}: {e}"[:300]})
+        finally:
+            q.put(None)
+
+    threading.Thread(target=worker, daemon=True, name="sthira-import").start()
+
+    def stream():
+        while True:
+            item = q.get()
+            if item is None:
+                return
+            yield json.dumps(item) + "\n"
+
+    return StreamingResponse(stream(), media_type="application/x-ndjson",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
 @app.post("/api/import")
 async def import_and_extract(file: UploadFile = File(...), kind: str | None = Form(None)):
     """Ingest + extract in one request (serverless instances don't share /tmp between requests)."""
@@ -202,6 +255,36 @@ def extract(body: ExtractBody):
         raise HTTPException(502, f"Model call failed: {_safe(e)}")
 
 
+@app.post("/api/demo/drop")
+def demo_drop():
+    """Demo mode only: put a realistic Claude Code session (the agent proposes going against two decisions) in the
+    inbox folder, exactly as a real session would appear, so the watcher can be seen reacting to it."""
+    if not os.environ.get("STHIRA_DEMO_DROP"):
+        raise HTTPException(404, "not available")
+    import shutil
+    import time as _t
+
+    src = ROOT / "demo" / "claude_code" / "session.jsonl"
+    from sthira import watch as _watch
+
+    inbox = _watch.inbox_dir()
+    dest = inbox / f"acme-session-{int(_t.time())}.jsonl"
+    shutil.copyfile(src, dest)
+    return {"dropped": dest.name}
+
+
+@app.get("/api/activity")
+def activity(limit: int = 30):
+    """What the background watcher has done: files read, entries waiting, agents caught going against decisions."""
+    return api.recent_activity(min(max(limit, 1), 100), con=con())
+
+
+@app.post("/api/activity/seen")
+def activity_seen():
+    api.mark_activity_seen(con=con())
+    return {"ok": True}
+
+
 @app.get("/api/rules")
 def rules():
     return api.learned_rules(con=con())
@@ -217,3 +300,93 @@ def agents_md():
     from sthira import sync
 
     return {"markdown": sync.render(con())}
+
+
+# ---- voice talkback (Sarvam): speak, ask your ledger, hear the answer --------------------------------------------
+_voice_hits: dict[str, list[float]] = {}
+
+
+def _voice_guard(request: Request):
+    """The hosted demo spends a shared Sarvam budget: allow ~20 voice calls a minute per visitor."""
+    if not sarvam.enabled():
+        raise HTTPException(503, "Voice is not configured on this server.")
+    ip = (request.headers.get("x-forwarded-for") or (request.client.host if request.client else "")).split(",")[0].strip()
+    now = time.time()
+    hits = [t for t in _voice_hits.get(ip, []) if now - t < 60]
+    if len(hits) >= 20:
+        raise HTTPException(429, "Too many voice requests, give it a minute.")
+    _voice_hits[ip] = hits + [now]
+
+
+class AskBody(BaseModel):
+    text: str
+    lang: str = "en-IN"
+
+
+class SpeakBody(BaseModel):
+    text: str
+    lang: str = "en-IN"
+
+
+def _cite(e) -> dict:
+    return {"id": e.id, "title": e.title, "statement": e.statement, "status": e.status, "decided_at": e.decided_at,
+            "source": e.source.title, "quote": e.source.quote}
+
+
+@app.post("/api/voice/stt")
+async def voice_stt(request: Request, audio: UploadFile = File(...)):
+    _voice_guard(request)
+    data = await audio.read()
+    if not data or len(data) > 8_000_000:
+        raise HTTPException(400, "No audio, or too long (keep it under a minute).")
+    try:
+        return sarvam.stt(data, audio.filename or "speech.webm", audio.content_type or "audio/webm")
+    except sarvam.SarvamError as e:
+        raise HTTPException(502, str(e))
+
+
+@app.post("/api/voice/tts")
+def voice_tts(body: SpeakBody, request: Request):
+    _voice_guard(request)
+    try:
+        return Response(sarvam.tts(body.text, body.lang), media_type="audio/wav")
+    except sarvam.SarvamError as e:
+        raise HTTPException(502, str(e))
+
+
+@app.post("/api/ask")
+def ask_ledger(body: AskBody, request: Request):
+    """Answer a question from the ledger, or (if it sounds like a decision) check it and record it. Any Indian language:
+    the question is translated to English for the grounded answer, which is translated back."""
+    text = body.text.strip()
+    if not text:
+        raise HTTPException(400, "Ask something.")
+    lang = sarvam.normalize_lang(body.lang)
+    foreign = lang != "en-IN"
+    if foreign:
+        _voice_guard(request)  # translation uses Sarvam
+    try:
+        english = sarvam.translate(text, "en-IN", lang) if foreign else text
+        decision = ask_mod.record_intent(english)
+        c = con()
+        if decision:
+            v = api.check(decision, con=c)
+            api.propose(decision, source_title="Spoken in Sthira", con=c)
+            if v.verdict in ("contradicts", "supersedes") and v.conflicts:
+                top = v.conflicts[0]
+                reply = (f"Careful. That goes against a decision you made: {top.entry.statement} {top.explanation} "
+                         "I noted it as proposed, not settled.")
+            else:
+                reply = "Noted. It doesn't conflict with anything settled, and I recorded it as proposed for you to confirm."
+            cites = [_cite(x.entry) for x in v.conflicts]
+            grounded = bool(cites)
+        else:
+            out = ask_mod.ask(c, english)
+            reply, cites, grounded = out["answer"], [_cite(e) for e in out["citations"]], out["grounded"]
+        spoken = sarvam.translate(reply, lang, "en-IN") if foreign else reply
+    except sarvam.SarvamError as e:
+        raise HTTPException(502, str(e))
+    except Exception as e:
+        raise HTTPException(502, f"Model call failed: {e}")
+    return {"question": text, "question_en": english, "answer": spoken, "answer_en": reply, "lang": lang,
+            "citations": cites, "grounded": grounded, "recorded": bool(decision)}

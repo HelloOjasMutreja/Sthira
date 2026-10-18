@@ -31,10 +31,10 @@ def ingest_upload(filename: str, data: bytes, kind: str | None = None, con=None)
 
 
 def extract(limit: int | None = None, con=None, on_progress=None, source_ids: list[str] | None = None,
-            errors: list[str] | None = None) -> list[Entry]:
+            errors: list[str] | None = None, on_chunk=None) -> list[Entry]:
     """Extract from pending conversations (oldest first); pass source_ids to only read those sources."""
     con = con or store.connect()
-    return _extract.extract(con, limit, on_progress, source_ids=source_ids, errors=errors)
+    return _extract.extract(con, limit, on_progress, source_ids=source_ids, errors=errors, on_chunk=on_chunk)
 
 
 def list_entries(status: str | None = None, kind: str | None = None, q: str | None = None, con=None) -> list[Entry]:
@@ -114,6 +114,18 @@ def learned_rules(con=None) -> list[dict]:
     """The rules Sthira learned from your rejections and verdict corrections (applied on every future run)."""
     con = con or store.connect()
     return _feedback.learned_rules(con)
+
+
+def recent_activity(limit: int = 30, con=None) -> list[dict]:
+    """What the background watcher did: files read, entries waiting for review, and agents caught going against decisions."""
+    con = con or store.connect()
+    return store.recent_activity(con, limit)
+
+
+def mark_activity_seen(con=None) -> None:
+    """The user has looked at the activity feed: alerts so far stop counting as unseen."""
+    con = con or store.connect()
+    store.mark_activity_seen(con)
 
 
 def feedback_stats(con=None) -> dict:

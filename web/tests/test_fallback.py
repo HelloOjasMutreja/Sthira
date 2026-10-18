@@ -46,3 +46,23 @@ def test_recorded_example_matches_despite_case_and_spacing():
 def test_no_match_is_not_a_verdict():
     r = client.post("/api/check", json={"text": "Add a dark mode toggle to the profile page"})
     assert r.status_code == 502 or r.json()["verdict"] in ("unrelated", "consistent")
+
+
+def test_activity_feed_endpoint():
+    from sthira import store
+
+    con = store.connect()
+    store.add_activity(con, "alert", "An agent in s.jsonl is going against a decision", {"decision": "Use Postgres"})
+    r = client.get("/api/activity")
+    assert r.status_code == 200
+    assert r.json()[0]["kind"] == "alert" and r.json()[0]["detail"]["decision"] == "Use Postgres"
+
+
+def test_marking_activity_seen_over_http():
+    from sthira import store
+
+    con = store.connect()
+    store.add_activity(con, "alert", "something new")
+    assert store.unseen_alerts(con) >= 1
+    assert client.post("/api/activity/seen").json() == {"ok": True}
+    assert store.unseen_alerts(store.connect()) == 0
