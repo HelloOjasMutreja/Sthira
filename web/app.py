@@ -5,12 +5,13 @@ from __future__ import annotations
 import copy
 import json
 import os
+import re
 import queue
 import threading
 import time
 from pathlib import Path
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, Response, StreamingResponse
 from pydantic import BaseModel
 
@@ -20,15 +21,29 @@ ROOT = HERE.parent
 # On serverless hosts only /tmp is writable; each cold start gets a freshly seeded demo ledger.
 if "STHIRA_DB" not in os.environ:
     os.environ["STHIRA_DB"] = "/tmp/sthira.db" if os.environ.get("VERCEL") else str(ROOT / ".sthira" / "web.db")
+# Values pasted into a dashboard often end with a newline, which makes the Authorization header invalid.
+for _name in ("STHIRA_PROVIDER", "STHIRA_MODEL", "STHIRA_FALLBACK_MODEL", "STHIRA_OPENAI_BASE_URL", "STHIRA_OPENAI_API_KEY"):
+    if os.environ.get(_name):
+        os.environ[_name] = os.environ[_name].strip()
 if os.environ.get("VERCEL") and "STHIRA_PROVIDER" not in os.environ:
     os.environ["STHIRA_PROVIDER"] = "openai"
     os.environ.setdefault("STHIRA_MODEL", "alibaba/qwen-3-32b")
 
-from sthira import api, config, llm, store  # noqa: E402
+from sthira import api, ask as ask_mod, config, llm, sarvam, store  # noqa: E402
 
 from . import fallback, seed  # noqa: E402
 
 app = FastAPI(title="Sthira", version="0.1.0")
+
+# Provider errors can echo request headers (e.g. httpx's "Illegal header value b'Bearer ...'"), and these
+# messages are returned to the browser. Never let a key out.
+_SECRET = re.compile(r"(Bearer\s+)[^\s'\"]+|\b(?:gsk|sk|sk-proj|vck)[_-][A-Za-z0-9_-]{8,}", re.I)
+
+
+def _safe(e: Exception) -> str:
+    return _SECRET.sub(lambda m: (m.group(1) or "") + "[redacted]", str(e))
+
+
 _lock = threading.Lock()
 
 
@@ -77,7 +92,8 @@ def index():
 @app.get("/api/meta")
 def meta():
     return {"model": config.model(), "provider": config.provider(), "version": "0.1.0",
-            "demo_drop": bool(os.environ.get("STHIRA_DEMO_DROP"))}
+            "demo_drop": bool(os.environ.get("STHIRA_DEMO_DROP")),
+            "voice": sarvam.enabled(), "languages": sarvam.LANGS}
 
 
 @app.get("/api/entries")
@@ -86,7 +102,7 @@ def entries(status: str | None = None, kind: str | None = None, q: str | None = 
 
 
 @app.get("/api/entries/{entry_id}/context")
-def entry_context(entry_id: str, around: int = 2):
+def entry_context(entry_id: str, around: str = "2"):
     """The source conversation around an entry's quote, so a decision can be read where it was made."""
     c = con()
     e = store.get_entry(c, entry_id)
@@ -98,7 +114,10 @@ def entry_context(entry_id: str, around: int = 2):
     idx = next((i for i, r in enumerate(rows) if r["msg_id"] == msg_id), None)
     if idx is None:
         return {"title": e.source.title, "messages": []}
-    around = max(0, min(around, 5))
+    try:  # documented as clamped to 0..5; a non-number falls back to the default instead of a 422
+        around = max(0, min(int(around), 5))
+    except ValueError:
+        around = 2
     window = rows[max(0, idx - around): idx + around + 1]
     return {"title": e.source.title, "messages": [
         {"role": r["role"], "ts": r["ts"], "text": (r["text"] or "")[:1500], "match": r["msg_id"] == msg_id}
@@ -160,7 +179,7 @@ def check(body: CheckBody):
         v = fallback.keyword_check(text, api.list_entries("settled", con=con()))
         if v:
             return {**v.model_dump(), "fallback": "keyword"}
-        raise HTTPException(502, f"Model call failed: {e}")
+        raise HTTPException(502, f"Model call failed: {_safe(e)}")
     # Only real model verdicts are cached; the fallbacks above return before reaching here.
     _verdict_cache.pop(key, None)
     if len(_verdict_cache) >= VERDICT_CACHE_MAX:
@@ -263,7 +282,7 @@ async def import_and_extract(file: UploadFile = File(...), kind: str | None = Fo
     try:
         llm.chat_json("Reply with JSON.", 'Return {"ok": true}', {"type": "object", "properties": {"ok": {"type": "boolean"}}, "required": ["ok"]})
     except Exception as e:
-        raise HTTPException(502, f"Model call failed: {e}")
+        raise HTTPException(502, f"Model call failed: {_safe(e)}")
     entries = api.extract(3, con=c, source_ids=r["source_ids"])  # only this upload, never someone else's
     return {"messages": r["messages"], "sources": r["sources"], "entries": [e.model_dump() for e in entries]}
 
@@ -274,7 +293,7 @@ def health():
         out = llm.chat_json("Reply with JSON.", 'Return {"ok": true}', {"type": "object", "properties": {"ok": {"type": "boolean"}}, "required": ["ok"]})
         return {"model": config.model(), "ok": bool(out.get("ok"))}
     except Exception as e:
-        raise HTTPException(502, f"Model call failed: {e}")
+        raise HTTPException(502, f"Model call failed: {_safe(e)}")
 
 
 @app.post("/api/extract")
@@ -282,7 +301,7 @@ def extract(body: ExtractBody):
     try:
         return [e.model_dump() for e in api.extract(min(body.limit or 3, 5), con=con())]
     except Exception as e:
-        raise HTTPException(502, f"Model call failed: {e}")
+        raise HTTPException(502, f"Model call failed: {_safe(e)}")
 
 
 @app.post("/api/demo/drop")
@@ -398,3 +417,93 @@ def _ledger_markdown(entries: list[dict]) -> str:
                 lines += [f"> {ln}" if ln.strip() else ">" for ln in src["quote"].splitlines()]
             lines.append("")
     return "\n".join(lines)
+
+
+# ---- voice talkback (Sarvam): speak, ask your ledger, hear the answer --------------------------------------------
+_voice_hits: dict[str, list[float]] = {}
+
+
+def _voice_guard(request: Request):
+    """The hosted demo spends a shared Sarvam budget: allow ~20 voice calls a minute per visitor."""
+    if not sarvam.enabled():
+        raise HTTPException(503, "Voice is not configured on this server.")
+    ip = (request.headers.get("x-forwarded-for") or (request.client.host if request.client else "")).split(",")[0].strip()
+    now = time.time()
+    hits = [t for t in _voice_hits.get(ip, []) if now - t < 60]
+    if len(hits) >= 20:
+        raise HTTPException(429, "Too many voice requests, give it a minute.")
+    _voice_hits[ip] = hits + [now]
+
+
+class AskBody(BaseModel):
+    text: str
+    lang: str = "en-IN"
+
+
+class SpeakBody(BaseModel):
+    text: str
+    lang: str = "en-IN"
+
+
+def _cite(e) -> dict:
+    return {"id": e.id, "title": e.title, "statement": e.statement, "status": e.status, "decided_at": e.decided_at,
+            "source": e.source.title, "quote": e.source.quote}
+
+
+@app.post("/api/voice/stt")
+async def voice_stt(request: Request, audio: UploadFile = File(...)):
+    _voice_guard(request)
+    data = await audio.read()
+    if not data or len(data) > 8_000_000:
+        raise HTTPException(400, "No audio, or too long (keep it under a minute).")
+    try:
+        return sarvam.stt(data, audio.filename or "speech.webm", audio.content_type or "audio/webm")
+    except sarvam.SarvamError as e:
+        raise HTTPException(502, str(e))
+
+
+@app.post("/api/voice/tts")
+def voice_tts(body: SpeakBody, request: Request):
+    _voice_guard(request)
+    try:
+        return Response(sarvam.tts(body.text, body.lang), media_type="audio/wav")
+    except sarvam.SarvamError as e:
+        raise HTTPException(502, str(e))
+
+
+@app.post("/api/ask")
+def ask_ledger(body: AskBody, request: Request):
+    """Answer a question from the ledger, or (if it sounds like a decision) check it and record it. Any Indian language:
+    the question is translated to English for the grounded answer, which is translated back."""
+    text = body.text.strip()
+    if not text:
+        raise HTTPException(400, "Ask something.")
+    lang = sarvam.normalize_lang(body.lang)
+    foreign = lang != "en-IN"
+    if foreign:
+        _voice_guard(request)  # translation uses Sarvam
+    try:
+        english = sarvam.translate(text, "en-IN", lang) if foreign else text
+        decision = ask_mod.record_intent(english)
+        c = con()
+        if decision:
+            v = api.check(decision, con=c)
+            api.propose(decision, source_title="Spoken in Sthira", con=c)
+            if v.verdict in ("contradicts", "supersedes") and v.conflicts:
+                top = v.conflicts[0]
+                reply = (f"Careful. That goes against a decision you made: {top.entry.statement} {top.explanation} "
+                         "I noted it as proposed, not settled.")
+            else:
+                reply = "Noted. It doesn't conflict with anything settled, and I recorded it as proposed for you to confirm."
+            cites = [_cite(x.entry) for x in v.conflicts]
+            grounded = bool(cites)
+        else:
+            out = ask_mod.ask(c, english)
+            reply, cites, grounded = out["answer"], [_cite(e) for e in out["citations"]], out["grounded"]
+        spoken = sarvam.translate(reply, lang, "en-IN") if foreign else reply
+    except sarvam.SarvamError as e:
+        raise HTTPException(502, str(e))
+    except Exception as e:
+        raise HTTPException(502, f"Model call failed: {_safe(e)}")
+    return {"question": text, "question_en": english, "answer": spoken, "answer_en": reply, "lang": lang,
+            "citations": cites, "grounded": grounded, "recorded": bool(decision)}
