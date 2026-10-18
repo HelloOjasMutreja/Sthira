@@ -30,6 +30,10 @@ $ sthira check "Migrate the user store from Postgres to MongoDB to avoid joins"
 └───────────────────────────────────────────────────────────────────────────┘
 ```
 
+And in the app, the same moment: your agent's plan is struck through, **OVERRULED** is stamped on, and the decision you carved earlier rises with your own words.
+
+<div align="center"><img src="docs/social/sthira-overruled.jpg" alt="Sthira stopping an agent that wants to add password login, citing the decision to use magic links only" width="720"></div>
+
 ## What it does
 
 | | |
@@ -39,7 +43,9 @@ $ sthira check "Migrate the user store from Postgres to MongoDB to avoid joins"
 | **Never forgets history** | Nothing is deleted. A changed decision is *superseded*, so the old one stays with a link to its replacement |
 | **Speaks up** | `sthira check`, `sthira scan <session>`, a Claude Code hook, and an MCP `check` tool give contradiction warnings that cite the source |
 | **Learns from you** (self-correction) | Reject a bad extraction, or correct a wrong verdict. Your corrections become rules for every future run, and `sthira stats` shows precision before vs after |
-| **Every agent sees it** | `sthira sync` writes a managed block into `AGENTS.md` / `CLAUDE.md`, and the MCP server serves the ledger to any AI tool |
+| **Every agent sees it** | `sthira sync` writes a managed block into `AGENTS.md` / `CLAUDE.md` (or a Cursor rule), and the MCP server serves the ledger to any AI tool |
+| **Works while you're away** | A background watcher reads new Claude Code sessions and an inbox folder, and raises an alert, with the agent's words and your decision side by side, the moment an agent goes against one |
+| **A desktop app** | `sthira app` opens the whole thing in a native window: the check, the wall of decisions with a **Rewind** slider (what had you decided on any date?), a live alert feed and a reader that shows the model's progress and ETA while it imports |
 
 ## Proof that it learns
 
@@ -68,19 +74,29 @@ uv run sthira scan ~/.claude/projects/<proj>/<session>.jsonl
 uv run sthira sync AGENTS.md                         # every coding agent now sees what's settled
 uv run sthira stats                                  # precision before vs after your corrections
 uv run sthira demo                                   # the full scripted demo
+uv run sthira watch                                  # keep the ledger current from new Claude Code sessions and ~/.sthira/inbox
 ```
+
+### The desktop app
+```bash
+uv sync --extra desktop --extra web
+uv run sthira app --demo        # a native window with the Acme Notes demo (press "Send an agent to work on the app")
+uv run sthira app               # your own ledger, with the watcher running behind it
+```
+On Windows, `powershell -ExecutionPolicy Bypass -File scripts\launch-demo.ps1` starts a fresh demo every time. Add `-Local` to use your own Ollama instead of a hosted open-weight model.
 
 ### Inside Claude Code
 
 **MCP server:** the agent can call `check` before acting, and `propose` when you decide something new.
 ```bash
-claude mcp add sthira -- uv run --directory /path/to/Sthira --extra mcp sthira mcp
+claude mcp add sthira -s user -- uv run --no-sync --directory /path/to/Sthira --extra mcp sthira mcp
 ```
+`--no-sync` matters: without it, `uv run` tries to update the environment first and fails if the desktop app has `sthira.exe` open, which shows up in Claude as "connection closed".
 
 **Live guard:** add a `UserPromptSubmit` hook so Sthira warns you (and the agent) when a request contradicts a settled decision:
 ```json
 { "hooks": { "UserPromptSubmit": [ { "hooks": [ { "type": "command",
-  "command": "uv run --directory /path/to/Sthira sthira hook" } ] } ] } }
+  "command": "uv run --no-sync --directory /path/to/Sthira sthira hook" } ] } ] } }
 ```
 
 ### Use another open-weight model or a hosted endpoint

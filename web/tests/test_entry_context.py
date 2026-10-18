@@ -26,3 +26,9 @@ def test_entry_context_marks_the_quoted_message():
 
 def test_entry_context_unknown_entry_is_404():
     assert client.get("/api/entries/nope/context").status_code == 404
+
+
+def test_bad_around_is_clamped_not_rejected():
+    entry = client.get("/api/entries", params={"status": "settled"}).json()[0]
+    assert client.get(f"/api/entries/{entry['id']}/context", params={"around": "abc"}).status_code == 200
+    assert client.get(f"/api/entries/{entry['id']}/context", params={"around": 99}).status_code == 200
