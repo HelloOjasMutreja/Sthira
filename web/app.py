@@ -413,6 +413,6 @@ def ask_ledger(body: AskBody, request: Request):
     except sarvam.SarvamError as e:
         raise HTTPException(502, str(e))
     except Exception as e:
-        raise HTTPException(502, f"Model call failed: {e}")
+        raise HTTPException(502, f"Model call failed: {_safe(e)}")
     return {"question": text, "question_en": english, "answer": spoken, "answer_en": reply, "lang": lang,
             "citations": cites, "grounded": grounded, "recorded": bool(decision)}
