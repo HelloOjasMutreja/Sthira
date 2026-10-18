@@ -31,10 +31,10 @@ def ingest_upload(filename: str, data: bytes, kind: str | None = None, con=None)
 
 
 def extract(limit: int | None = None, con=None, on_progress=None, source_ids: list[str] | None = None,
-            errors: list[str] | None = None) -> list[Entry]:
+            errors: list[str] | None = None, on_chunk=None) -> list[Entry]:
     """Extract from pending conversations (oldest first); pass source_ids to only read those sources."""
     con = con or store.connect()
-    return _extract.extract(con, limit, on_progress, source_ids=source_ids, errors=errors)
+    return _extract.extract(con, limit, on_progress, source_ids=source_ids, errors=errors, on_chunk=on_chunk)
 
 
 def list_entries(status: str | None = None, kind: str | None = None, q: str | None = None, con=None) -> list[Entry]:
