@@ -41,12 +41,20 @@ h1{font-family:"Instrument Serif",serif;font-weight:400;font-size:46px;margin:0;
 .badge b{color:var(--ink);font-weight:600}
 .grid{display:grid;grid-template-columns:1.05fr 1fr;gap:20px;margin:8px 0 40px}
 @media (max-width:900px){.grid{grid-template-columns:1fr}h1{font-size:38px}.deva{font-size:36px}}
+.stack{margin-top:20px}
+/* Phones: one column, with the ledger (the citations) right after Check instead of at the very bottom. */
+@media (max-width:900px){
+  .col{display:contents}
+  .stack{margin-top:0}
+  .card-check{order:1} .card-ledger{order:2} .card-upload{order:3} .card-agents{order:4}
+  .card-ledger .list{max-height:none;overflow:visible;padding-right:0}
+}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:20px}
 .card h2{font-family:"Instrument Serif",serif;font-weight:400;font-size:26px;margin:0 0 4px}
 .sub{color:var(--muted);margin:0 0 14px;font-size:14px}
 textarea{width:100%;min-height:92px;resize:vertical;border:1px solid var(--line);border-radius:10px;padding:12px;font:inherit;background:var(--bg);color:var(--ink)}
 textarea:focus,input:focus{outline:2px solid var(--accent);outline-offset:1px}
-.chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
 .chip{font-size:13px;border:1px dashed var(--line);border-radius:999px;padding:4px 10px;background:transparent;color:var(--muted);cursor:pointer}
 .chip:hover{border-color:var(--accent);color:var(--accent)}
 button.primary{background:var(--ink);color:var(--bg);border:0;border-radius:10px;padding:10px 16px;font:600 14px Inter,sans-serif;cursor:pointer}
@@ -64,7 +72,8 @@ button.ghost:hover{border-color:var(--accent)}
 .meta{font-size:12.5px;color:var(--muted)}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:20px}
 .stat{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--bg)}
-.stat .n{font-family:"Instrument Serif",serif;font-size:34px;line-height:1}
+.stat .n{font-family:"Instrument Serif",serif;font-size:34px;line-height:1;white-space:nowrap}
+@media (max-width:600px){.stats{grid-template-columns:1fr 1fr}.stat:last-child{grid-column:1/-1}}
 .stat .l{font-size:12px;color:var(--muted);margin-top:4px}
 .arrow{color:var(--ok)}
 .tabs{display:flex;gap:4px;margin:0 0 12px;flex-wrap:wrap}
@@ -89,6 +98,8 @@ button.ghost:hover{border-color:var(--accent)}
 .step b{display:block;font-family:"Instrument Serif",serif;font-weight:400;font-size:20px}
 .step span{font-size:13.5px;color:var(--muted)}
 pre{font:12.5px/1.5 "JetBrains Mono",monospace;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;overflow:auto;white-space:pre-wrap}
+pre.clamp{max-height:15em;overflow:hidden;-webkit-mask-image:linear-gradient(#000 65%,transparent);mask-image:linear-gradient(#000 65%,transparent)}
+.more{margin-top:8px}
 .upload{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
 .err{color:var(--bad);font-size:13.5px}
 footer{color:var(--muted);font-size:13px;padding:24px 0 40px;border-top:1px solid var(--line)}
@@ -119,8 +130,8 @@ footer a{color:var(--accent)}
   </section>
 
   <div class="grid">
-    <div>
-      <div class="card">
+    <div class="col">
+      <div class="card card-check">
         <h2>Check new work</h2>
         <p class="sub">Paste what an AI agent is about to do, or a plan of your own. Sthira checks it against what you’ve settled.</p>
         <textarea id="text" placeholder="e.g. Migrate the user store from Postgres to MongoDB and denormalize memberships…"></textarea>
@@ -131,7 +142,7 @@ footer a{color:var(--accent)}
         <div id="rules"></div>
       </div>
 
-      <div class="card" style="margin-top:20px">
+      <div class="card card-upload stack">
         <h2>Bring your own history</h2>
         <p class="sub">Upload a ChatGPT/Claude <code>conversations.json</code>, a Claude Code <code>.jsonl</code> or a transcript (<code>.md</code>). The hosted demo reads up to 3 conversations; run locally with Ollama for everything.</p>
         <div class="upload">
@@ -141,14 +152,15 @@ footer a{color:var(--accent)}
         </div>
       </div>
 
-      <div class="card" style="margin-top:20px">
+      <div class="card card-agents stack">
         <h2>Every agent sees it</h2>
         <p class="sub"><code>sthira sync</code> writes this block into <code>AGENTS.md</code> / <code>CLAUDE.md</code>. Over MCP, agents call <code>check</code> before acting.</p>
-        <pre id="agents">…</pre>
+        <pre id="agents" class="clamp">…</pre>
+        <button class="ghost more" id="agents-more" aria-expanded="false" aria-controls="agents">Show full block</button>
       </div>
     </div>
 
-    <div class="card">
+    <div class="card card-ledger">
       <h2>Your ledger</h2>
       <p class="sub">Everything Sthira extracted, each with its source. Settle what’s right; reject what isn’t (that’s how it learns).</p>
       <div class="tabs" id="tabs"></div>
@@ -169,14 +181,30 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;
 const day = s => (s || "").slice(0, 10);
 let entries = [], filter = "settled";
 
+// The texts must stay exactly as recorded in demo/cached_checks.json (the offline fallback is keyed on them).
 const examples = [
-  "Migrate the user store from Postgres to MongoDB and denormalize memberships to avoid joins.",
-  "Add email + password login with a forgot-password reset flow.",
-  "Set up the mobile app release pipeline now, before the web app is stable.",
-  "Add a dark mode toggle to the settings page.",
+  ["MongoDB migration", "Migrate the user store from Postgres to MongoDB and denormalize memberships to avoid joins."],
+  ["Password login", "Add email + password login with a forgot-password reset flow."],
+  ["Mobile before web", "Set up the mobile app release pipeline now, before the web app is stable."],
+  ["Dark mode (unrelated)", "Add a dark mode toggle to the settings page."],
 ];
-$("#chips").innerHTML = examples.map((e, i) => `<button class="chip" data-i="${i}">${esc(e.split(" ").slice(0, 6).join(" "))}…</button>`).join("");
-$("#chips").onclick = ev => { const i = ev.target.dataset.i; if (i !== undefined) { $("#text").value = examples[i]; run(); } };
+$("#chips").innerHTML = `<span class="meta">Try:</span>` + examples.map(([label, text], i) =>
+  `<button class="chip" data-i="${i}" title="${esc(text)}">${esc(label)}</button>`).join("");
+$("#chips").onclick = ev => { const i = ev.target.dataset.i; if (i !== undefined) { $("#text").value = examples[i][1]; run(); } };
+
+$("#agents-more").onclick = () => {
+  const open = $("#agents").classList.toggle("clamp") === false;
+  $("#agents-more").textContent = open ? "Show less" : "Show full block";
+  $("#agents-more").setAttribute("aria-expanded", open);
+};
+
+// Small models sometimes copy the quote or statement into the rationale; don't show it twice.
+const squash = s => (s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const repeats = (why, ...others) => others.some(o => {
+  const a = squash(why), b = squash(o);
+  // Near-identical only: a real reason that is merely part of a longer quote stays visible.
+  return a && b && (a.includes(b) || b.includes(a)) && Math.min(a.length, b.length) / Math.max(a.length, b.length) > 0.8;
+});
 
 async function j(url, opts) {
   const r = await fetch(url, opts);
@@ -253,7 +281,7 @@ function render() {
     <div class="entry ${e.status}">
       <div class="row"><span class="kind">${e.kind.replace("_", " ")}</span><span class="st ${e.status}">${e.status}</span></div>
       <div class="stmt">${esc(e.statement)}</div>
-      ${e.rationale ? `<p class="why">Why: ${esc(e.rationale)}</p>` : ""}
+      ${e.rationale && !repeats(e.rationale, e.statement, e.source.quote) ? `<p class="why">Why: ${esc(e.rationale)}</p>` : ""}
       <div class="quote" style="font-size:16px">“${esc(e.source.quote)}”</div>
       <div class="meta">${esc(e.source.title)} · ${day(e.decided_at)}${e.alternatives_rejected?.length ? " · rejected: " + esc(e.alternatives_rejected.join(", ")) : ""}</div>
       ${e.status === "proposed" ? `<div class="actions"><button class="ghost" data-a="settle" data-id="${e.id}">Settle</button><button class="ghost" data-a="reject" data-id="${e.id}">Reject</button></div>` : ""}
