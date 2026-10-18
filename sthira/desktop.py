@@ -34,7 +34,11 @@ def start_server(port: int, demo: bool = False):
     if root not in sys.path and (repo_root() / "web").exists():
         sys.path.insert(0, root)  # `web/` sits next to the package in the repo
     os.environ["STHIRA_DB"] = str(config.db_path())  # the same ledger the CLI uses, not the web demo's own
-    if not demo:
+    if demo:
+        os.environ["STHIRA_DEMO_DROP"] = "1"  # shows the "simulate an agent session" button
+        os.environ.setdefault("STHIRA_WATCH_SETTLE", "2")
+        os.environ.setdefault("STHIRA_WATCH_INTERVAL", "2")
+    else:
         os.environ["STHIRA_NO_SEED"] = "1"  # a real ledger must never be filled with demo data
     from web.app import app as fastapi_app
 
@@ -49,11 +53,12 @@ def start_server(port: int, demo: bool = False):
     return server, thread
 
 
-def start_watcher(stop: threading.Event, on_event=None) -> threading.Thread:
+def start_watcher(stop: threading.Event, on_event=None, demo: bool = False) -> threading.Thread:
     from . import watch
 
     t = threading.Thread(
-        target=lambda: watch.run(on_event=on_event, stop=stop.is_set), daemon=True, name="sthira-watch")
+        target=lambda: watch.run(watch.default_dirs(inbox_only=demo), on_event=on_event, stop=stop.is_set),
+        daemon=True, name="sthira-watch")
     t.start()
     return t
 
@@ -89,7 +94,7 @@ def main(demo: bool = False, watch_files: bool = True, width: int = 1180, height
     server, _ = start_server(port, demo=demo)
     stop = threading.Event()
     if watch_files:
-        start_watcher(stop)
+        start_watcher(stop, demo=demo)
     window = webview.create_window("Sthira", f"http://127.0.0.1:{port}", width=width, height=height, min_size=(760, 560))
     try:
         webview.start(lambda: _badge_loop(window, stop), debug=False)  # blocks until the window is closed
