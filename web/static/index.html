@@ -230,6 +230,42 @@ dialog .row{justify-content:flex-end}
 @media (prefers-reduced-motion:reduce){.arena .stone blockquote{clip-path:none}}
 .conf .stone blockquote{clip-path:none}
 
+/* ---------- agent replay: a recorded session types out, Sthira interrupts inline ---------- */
+.term{border:3px solid var(--ink);border-radius:22px;background:var(--paper);box-shadow:var(--shadow-lg);overflow:hidden}
+.termbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--ink);color:var(--chalk);padding:9px 16px;font-size:13px;font-weight:700}
+.termbar i{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--madder);margin-right:6px;box-shadow:16px 0 0 var(--saffron),32px 0 0 var(--jade)}
+.termbar .tt{display:flex;align-items:center;gap:30px;min-width:0;overflow-wrap:anywhere}
+.termbar output{color:var(--saffron);font-weight:800}
+.termlog{display:grid;gap:14px;padding:18px;min-height:150px;align-content:start}
+.termidle{margin:0;color:var(--ink-2);font:italic 17px/1.45 var(--inscribe)}
+.tl{display:grid;grid-template-columns:62px 1fr;gap:12px;align-items:start}
+.tlwho{border:2px solid var(--ink);border-radius:8px;padding:1px 0;text-align:center;font-size:13px;font-weight:800;background:var(--sky)}
+.tlwho.agent{background:var(--plum)}
+.tltxt{font-size:16px;line-height:1.45;overflow-wrap:anywhere;padding-top:1px}
+.tl .caret{display:inline-block;width:2px;height:1.1em;background:var(--ink);vertical-align:-3px;margin-left:2px;animation:blink .6s infinite}
+.tl.drifted .txt{text-decoration:underline wavy var(--madder);text-decoration-thickness:2px;text-underline-offset:4px}
+.intr{position:relative;margin-left:74px;min-width:0}
+.intr.wait,.intr.ok,.intr.err{border:2px dashed var(--ink);border-radius:12px;padding:8px 12px;font-size:14px;font-weight:700}
+.intr.wait{background:var(--saffron-soft)}
+.intr.wait i{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--saffron);border:2px solid var(--ink);margin-right:8px;animation:blink .5s infinite alternate}
+.intr.ok{background:var(--jade-soft);color:#05503f;border-style:solid;border-color:var(--jade)}
+.intr.err{background:#fff7e0}
+.intr small{display:block;font-weight:500;color:var(--ink-2);margin-top:2px}
+.intr.bad{border:3px solid var(--ink);border-radius:18px;background:var(--madder-soft);padding:14px;box-shadow:var(--shadow)}
+.intr.bad .stamp{font-size:22px;border-width:4px;padding:0 10px;top:-14px;right:10px}
+.intr.bad>.who{padding-right:150px;line-height:1.9}
+.intr.bad .conf{margin-top:6px}
+.intr.bad .said{min-height:0;font-size:15px}
+.intr.bad .stone h3{font-size:17px}
+.intr.bad .stone blockquote{font-size:16px}
+.intr.bad .why{margin:12px 2px 2px;font-size:15px}
+.tag{display:inline-block;border:2px solid var(--ink);border-radius:8px;padding:0 8px;font-size:12px;font-weight:800;background:var(--paper);margin-left:6px;vertical-align:1px}
+.tlscore{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-top:3px dashed var(--line);padding-top:14px;font-weight:800;font-size:18px}
+.tlscore b{font-size:30px;letter-spacing:-.03em;color:var(--madder)}
+@media (prefers-reduced-motion:no-preference){.intr.bad .stamp{animation:slam .38s cubic-bezier(.2,.9,.3,1) both}.intr.bad{animation:shake .5s}.intr.ok,.intr.err{animation:rise .35s both}}
+@media (prefers-reduced-motion:reduce){.tl .caret,.intr.wait i{animation:none}}
+@media (max-width:600px){.tl{grid-template-columns:1fr;gap:4px}.tlwho{justify-self:start;padding:1px 10px}.intr{margin-left:0}.termlog{padding:14px}.intr.bad .stamp{font-size:18px}.intr.bad>.who{padding-right:122px}.tag{display:table;white-space:nowrap;margin:2px 0 0}}
+
 /* ---------- guided tour (driver.js, themed to the page) ---------- */
 .tourline{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:0 0 20px}
 .tourline .btn{display:inline-flex;gap:8px;align-items:center}
@@ -303,6 +339,18 @@ dialog .row{justify-content:flex-end}
       <div id="dropbox"></div>
     </div>
     <div class="feed" id="feed"></div>
+  </section>
+
+  <section class="sec" id="replaysec">
+    <div class="sechead">
+      <div><h2>Watch an agent drift</h2><p class="sub">Replay a real Claude Code session. Sthira checks everything the agent says against your decisions and interrupts the moment it drifts. In real use, the watcher and the Claude Code hook do this in the background.</p></div>
+      <button class="btn go" id="replay" type="button">Replay an agent session</button>
+    </div>
+    <div class="term">
+      <div class="termbar"><span class="tt"><i aria-hidden="true"></i><span id="termtitle">claude code · recorded session</span></span><output id="termscore"></output></div>
+      <div class="termlog" id="termlog"><p class="termidle">An agent is asked to speed up the notes search. Press replay and watch what it proposes.</p></div>
+    </div>
+    <p class="sr" id="replaysay" aria-live="polite"></p>
   </section>
 
   <section class="sec">
@@ -700,6 +748,97 @@ const dz = $("#drop");
 ["dragleave", "drop"].forEach(t => dz.addEventListener(t, e => { e.preventDefault(); dz.classList.remove("over"); }));
 dz.addEventListener("drop", e => upload(e.dataTransfer.files[0]));
 
+/* ---------- agent replay: works on any host, no demo mode or watcher needed ---------- */
+// Types out a recorded Claude Code session and runs each agent message through the same /api/check the watcher and
+// the Claude Code hook use in real life. Every piece of text goes in through textContent.
+const mk = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+let demoSession = null, replaying = false;
+async function typeOut(node, text) {
+  if (reduced) { node.textContent = text; return; }
+  const ms = Math.max(600, Math.min(1700, text.length * 11)), t0 = performance.now();
+  for (;;) {
+    const p = Math.min(1, (performance.now() - t0) / ms);
+    node.textContent = text.slice(0, Math.ceil(text.length * p));
+    if (p >= 1) return;
+    await sleep(16);
+  }
+}
+const follow = node => node.scrollIntoView({block: "nearest", behavior: reduced ? "auto" : "smooth"});
+function replayNote(v) {
+  return v.fallback === "keyword" ? "Keyword match: not a model verdict. The hosted model is offline, so Sthira matched an alternative you explicitly rejected."
+       : v.fallback === "recorded" ? "Recorded from a real local Qwen3 run. The hosted model is offline."
+       : `Flagged by ${v.model}${v.cached ? " · cached" : ""}.`;
+}
+function driftCard(v, said) {
+  const c = v.conflicts[0], e = c.entry, box = mk("div", "intr bad");
+  box.append(mk("div", "stamp", "OVERRULED"));
+  const who = mk("p", "who", "Sthira interrupts");
+  if (v.fallback) who.append(mk("span", "tag", v.fallback === "keyword" ? "keyword match · not a model verdict" : "recorded run"));
+  const left = mk("div"); left.append(mk("p", "who", "The agent said"), mk("div", "said", `“${said}”`));
+  const stone = mk("div", "stone");
+  stone.append(mk("h3", null, e.statement), mk("blockquote", null, `“${e.source.quote}”`), mk("div", "plaque", `${day(e.decided_at)} · ${e.source.title || "source"}`));
+  const right = mk("div"); right.append(mk("p", "who", "You decided"), stone);
+  const vs = mk("div", "vs", "≠"); vs.setAttribute("aria-hidden", "true");
+  const conf = mk("div", "conf"); conf.append(left, vs, right);
+  box.append(who, conf, mk("p", "why", c.explanation));
+  if (v.conflicts.length > 1) box.append(mk("p", "fine", `${v.conflicts.length - 1} more decision${v.conflicts.length > 2 ? "s" : ""} also conflict.`));
+  box.append(mk("p", "fine", replayNote(v)));
+  return box;
+}
+async function replay() {
+  if (replaying) return;
+  const btn = $("#replay"), log = $("#termlog"), score = $("#termscore"), say = $("#replaysay");
+  replaying = true; btn.disabled = true; btn.textContent = "Replaying…";
+  try {
+    if (!demoSession) {
+      try { demoSession = await j("/api/demo-session"); } catch (e) { toast("Couldn't load the recorded session. Try again in a moment.", "bad"); return; }
+    }
+    if (!demoSession.messages.length) { toast("The recorded session isn't available on this deployment.", "bad"); return; }
+    $("#termtitle").textContent = `claude code · ${demoSession.title || "recorded session"}`.slice(0, 90);
+    log.replaceChildren(); score.textContent = ""; say.textContent = "Replaying a recorded agent session.";
+    let checked = 0, caught = 0, failed = 0;
+    for (const m of demoSession.messages) {
+      const agent = m.role === "assistant", line = mk("div", "tl");
+      const txt = mk("span", "txt"), caret = mk("span", "caret"), body = mk("div", "tltxt");
+      body.append(txt, caret); line.append(mk("span", "tlwho" + (agent ? " agent" : ""), agent ? "agent" : "you"), body);
+      log.append(line); follow(line);
+      await typeOut(txt, m.text); caret.remove();
+      say.textContent = `${agent ? "Agent" : "You"}: ${m.text}`;
+      if (!agent || m.text.length <= 40) { await sleep(reduced ? 0 : 350); continue; }
+      checked++;
+      const wait = mk("div", "intr wait"); wait.append(mk("i"), document.createTextNode("Sthira is checking…"));
+      log.append(wait); follow(wait);
+      const t0 = Date.now(); let v = null;
+      try { v = await post("/api/check", {text: m.text}); } catch (e) { v = null; }
+      if (!reduced) await sleep(Math.max(0, 600 - (Date.now() - t0)));  // long enough to read "checking"
+      let out;
+      if (!v) {
+        failed++;
+        out = mk("div", "intr err", "The hosted model is busy right now, so this message wasn't checked.");
+        out.append(mk("small", null, "Try the replay again in a minute, or run Sthira on your own machine."));
+        say.textContent = "Sthira couldn't check that message: the hosted model is busy.";
+      } else if (v.verdict === "contradicts") {
+        caught++; line.classList.add("drifted"); out = driftCard(v, m.text); blip("stamp");
+        say.textContent = `Overruled. You decided: ${v.conflicts[0].entry.statement}`;
+      } else {
+        out = mk("div", "intr ok", v.verdict === "unrelated" ? "Consistent: nothing you've settled covers this." : "Consistent with what you've settled.");
+        out.append(mk("small", null, `Checked by ${v.model}${v.cached ? " · cached" : ""}`));
+        say.textContent = "Consistent with your decisions.";
+      }
+      wait.replaceWith(out); follow(out);
+      await sleep(reduced ? 0 : 1300);
+    }
+    const end = mk("div", "tlscore"), n = mk("b", null, `${caught} of ${checked}`);
+    end.append(n, document.createTextNode(`drift${checked === 1 ? "" : "s"} caught${failed ? ` · ${failed} not checked (model busy)` : ""}`));
+    log.append(end); follow(end);
+    score.textContent = `${caught} of ${checked} caught`;
+    say.textContent = `Replay finished. ${caught} of ${checked} drifts caught.`;
+  } finally {
+    replaying = false; btn.disabled = false; btn.textContent = "Replay again";
+  }
+}
+$("#replay").onclick = replay;
+
 /* ---------- guided tour: the product story in about a minute, no presenter needed ---------- */
 const TOURED = "sthira-toured";
 const seenTour = () => { try { return !!localStorage.getItem(TOURED); } catch (e) { return true; } };
@@ -747,6 +886,8 @@ function tour() {
         description: "Reject a bad catch or correct a verdict, and it becomes a rule for every later run. On qwen3:4b, precision on unseen chats rose from 60% to 71% after one round."}},
       {element: "#awaysec", popover: {title: "It watches while you're away", side: "top", align: "start",
         description: "Sthira reads your Claude Code sessions and an inbox folder in the background, and flags the moment an agent goes against a decision."}},
+      {element: "#replaysec", popover: {title: "Or watch it live", side: "top", align: "start",
+        description: "Replay a recorded Claude Code session after the tour, and see Sthira interrupt each time the agent drifts from a decision."}},
       {element: "#importbox", popover: {title: "Feed it your history", side: "top", align: "start",
         description: "Drop a ChatGPT or Claude export, a Claude Code session or a meeting transcript. A local open-weight model reads it and cites every quote."}},
       {element: "#agentsbox", popover: {title: "Every agent reads it", side: "top", align: "start",

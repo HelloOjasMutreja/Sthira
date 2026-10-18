@@ -283,6 +283,19 @@ def demo_drop():
     return {"dropped": dest.name}
 
 
+@app.get("/api/demo-session")
+def demo_session():
+    """The demo Claude Code session, for the in-browser agent replay. Works on any host: the browser types it out and
+    calls /api/check on each agent message, so it needs neither demo mode nor the background watcher."""
+    from sthira.ingest import claude_code
+
+    path = ROOT / "demo" / "claude_code" / "session.jsonl"
+    if not path.exists():
+        return {"title": "", "messages": []}
+    title, msgs = claude_code.parse(path.read_text(encoding="utf-8"), path.name)
+    return {"title": title, "messages": [{"role": m.role, "text": m.text} for m in msgs]}
+
+
 @app.get("/api/activity")
 def activity(limit: int = 30):
     """What the background watcher has done: files read, entries waiting, agents caught going against decisions."""
