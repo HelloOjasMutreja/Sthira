@@ -9,8 +9,8 @@ import threading
 import time
 from pathlib import Path
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import HTMLResponse, Response, StreamingResponse
 from pydantic import BaseModel
 
 HERE = Path(__file__).resolve().parent
@@ -23,7 +23,7 @@ if os.environ.get("VERCEL") and "STHIRA_PROVIDER" not in os.environ:
     os.environ["STHIRA_PROVIDER"] = "openai"
     os.environ.setdefault("STHIRA_MODEL", "alibaba/qwen-3-32b")
 
-from sthira import api, config, llm, store  # noqa: E402
+from sthira import api, ask as ask_mod, config, llm, sarvam, store  # noqa: E402
 
 from . import fallback, seed  # noqa: E402
 
@@ -76,7 +76,8 @@ def index():
 @app.get("/api/meta")
 def meta():
     return {"model": config.model(), "provider": config.provider(), "version": "0.1.0",
-            "demo_drop": bool(os.environ.get("STHIRA_DEMO_DROP"))}
+            "demo_drop": bool(os.environ.get("STHIRA_DEMO_DROP")),
+            "voice": sarvam.enabled(), "languages": sarvam.LANGS}
 
 
 @app.get("/api/entries")
@@ -284,3 +285,93 @@ def agents_md():
     from sthira import sync
 
     return {"markdown": sync.render(con())}
+
+
+# ---- voice talkback (Sarvam): speak, ask your ledger, hear the answer --------------------------------------------
+_voice_hits: dict[str, list[float]] = {}
+
+
+def _voice_guard(request: Request):
+    """The hosted demo spends a shared Sarvam budget: allow ~20 voice calls a minute per visitor."""
+    if not sarvam.enabled():
+        raise HTTPException(503, "Voice is not configured on this server.")
+    ip = (request.headers.get("x-forwarded-for") or (request.client.host if request.client else "")).split(",")[0].strip()
+    now = time.time()
+    hits = [t for t in _voice_hits.get(ip, []) if now - t < 60]
+    if len(hits) >= 20:
+        raise HTTPException(429, "Too many voice requests, give it a minute.")
+    _voice_hits[ip] = hits + [now]
+
+
+class AskBody(BaseModel):
+    text: str
+    lang: str = "en-IN"
+
+
+class SpeakBody(BaseModel):
+    text: str
+    lang: str = "en-IN"
+
+
+def _cite(e) -> dict:
+    return {"id": e.id, "title": e.title, "statement": e.statement, "status": e.status, "decided_at": e.decided_at,
+            "source": e.source.title, "quote": e.source.quote}
+
+
+@app.post("/api/voice/stt")
+async def voice_stt(request: Request, audio: UploadFile = File(...)):
+    _voice_guard(request)
+    data = await audio.read()
+    if not data or len(data) > 8_000_000:
+        raise HTTPException(400, "No audio, or too long (keep it under a minute).")
+    try:
+        return sarvam.stt(data, audio.filename or "speech.webm", audio.content_type or "audio/webm")
+    except sarvam.SarvamError as e:
+        raise HTTPException(502, str(e))
+
+
+@app.post("/api/voice/tts")
+def voice_tts(body: SpeakBody, request: Request):
+    _voice_guard(request)
+    try:
+        return Response(sarvam.tts(body.text, body.lang), media_type="audio/wav")
+    except sarvam.SarvamError as e:
+        raise HTTPException(502, str(e))
+
+
+@app.post("/api/ask")
+def ask_ledger(body: AskBody, request: Request):
+    """Answer a question from the ledger, or (if it sounds like a decision) check it and record it. Any Indian language:
+    the question is translated to English for the grounded answer, which is translated back."""
+    text = body.text.strip()
+    if not text:
+        raise HTTPException(400, "Ask something.")
+    lang = sarvam.normalize_lang(body.lang)
+    foreign = lang != "en-IN"
+    if foreign:
+        _voice_guard(request)  # translation uses Sarvam
+    try:
+        english = sarvam.translate(text, "en-IN", lang) if foreign else text
+        decision = ask_mod.record_intent(english)
+        c = con()
+        if decision:
+            v = api.check(decision, con=c)
+            api.propose(decision, source_title="Spoken in Sthira", con=c)
+            if v.verdict in ("contradicts", "supersedes") and v.conflicts:
+                top = v.conflicts[0]
+                reply = (f"Careful. That goes against a decision you made: {top.entry.statement} {top.explanation} "
+                         "I noted it as proposed, not settled.")
+            else:
+                reply = "Noted. It doesn't conflict with anything settled, and I recorded it as proposed for you to confirm."
+            cites = [_cite(x.entry) for x in v.conflicts]
+            grounded = bool(cites)
+        else:
+            out = ask_mod.ask(c, english)
+            reply, cites, grounded = out["answer"], [_cite(e) for e in out["citations"]], out["grounded"]
+        spoken = sarvam.translate(reply, lang, "en-IN") if foreign else reply
+    except sarvam.SarvamError as e:
+        raise HTTPException(502, str(e))
+    except Exception as e:
+        raise HTTPException(502, f"Model call failed: {e}")
+    return {"question": text, "question_en": english, "answer": spoken, "answer_en": reply, "lang": lang,
+            "citations": cites, "grounded": grounded, "recorded": bool(decision)}
