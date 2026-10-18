@@ -30,3 +30,7 @@ def test_ask_drops_invented_citations(monkeypatch):
     monkeypatch.setattr(ask.llm, "chat_json", lambda *a, **k: {"answer": "Postgres.", "cited": [0, 7, -1]})
     out = ask.ask(con, "which database do we use?")
     assert [c.id for c in out["citations"]] == ["e1"] and out["grounded"]
+
+
+def test_questions_never_record():
+    assert ask.record_intent("We decided to use MongoDB?") is None

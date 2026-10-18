@@ -31,6 +31,8 @@ DECIDE = re.compile(r"^\s*(?:we|i)\s*(?:'ve|have)?\s*(?:decided|agreed|chose|wil
 
 def record_intent(text: str) -> str | None:
     """'Record that we use SQLite for search' or 'we decided to use SQLite' -> the decision text, else None."""
+    if text.strip().endswith("?"):  # a question never writes to the ledger
+        return None
     m = RECORD.match(text)
     if m:
         return m.group(1).strip().rstrip(".")
