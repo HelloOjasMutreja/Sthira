@@ -72,7 +72,8 @@ def index():
 
 @app.get("/api/meta")
 def meta():
-    return {"model": config.model(), "provider": config.provider(), "version": "0.1.0"}
+    return {"model": config.model(), "provider": config.provider(), "version": "0.1.0",
+            "demo_drop": bool(os.environ.get("STHIRA_DEMO_DROP"))}
 
 
 @app.get("/api/entries")
@@ -186,6 +187,24 @@ def extract(body: ExtractBody):
         return [e.model_dump() for e in api.extract(min(body.limit or 3, 5), con=con())]
     except Exception as e:
         raise HTTPException(502, f"Model call failed: {e}")
+
+
+@app.post("/api/demo/drop")
+def demo_drop():
+    """Demo mode only: put a realistic Claude Code session (the agent proposes going against two decisions) in the
+    inbox folder, exactly as a real session would appear, so the watcher can be seen reacting to it."""
+    if not os.environ.get("STHIRA_DEMO_DROP"):
+        raise HTTPException(404, "not available")
+    import shutil
+    import time as _t
+
+    src = ROOT / "demo" / "claude_code" / "session.jsonl"
+    from sthira import watch as _watch
+
+    inbox = _watch.inbox_dir()
+    dest = inbox / f"acme-session-{int(_t.time())}.jsonl"
+    shutil.copyfile(src, dest)
+    return {"dropped": dest.name}
 
 
 @app.get("/api/activity")

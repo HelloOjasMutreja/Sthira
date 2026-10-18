@@ -298,7 +298,10 @@ async function loadActivity() {
   let feed = [];
   try { feed = await j("/api/activity"); } catch (e) { return; }
   const box = $("#activity");
-  if (!feed.length) { box.innerHTML = ""; return; }
+  const demo = (await j("/api/meta").catch(() => ({}))).demo_drop;
+  const dropBtn = demo ? `<button class="primary" id="drop" style="margin:4px 0 14px">▶ Simulate: an agent works on the app tonight</button>
+    <span class="meta" id="dropmsg" style="margin-left:10px"></span>` : "";
+  if (!feed.length && !demo) { box.innerHTML = ""; return; }
   const item = a => a.kind === "alert"
     ? `<div class="verdict bad" style="margin-bottom:10px"><h3>⚠ ${esc(a.title)} · <span class="meta">${ago(a.ts)}</span></h3>
         <div class="meta">The agent said</div><div style="margin:2px 0 8px">“${esc((a.detail.agent_said || "").slice(0, 220))}”</div>
@@ -314,7 +317,14 @@ async function loadActivity() {
   const alerts = feed.filter(a => a.kind === "alert").slice(0, 3), rest = feed.filter(a => a.kind !== "alert").slice(0, 6);
   box.innerHTML = `<div class="card" style="margin-bottom:20px"><h2>While you were away</h2>
     <p class="sub">Sthira is watching your Claude Code sessions and your inbox folder in the background.</p>
-    ${alerts.map(item).join("")}${rest.map(item).join("")}</div>`;
+    ${dropBtn}${alerts.map(item).join("")}${rest.map(item).join("")}</div>`;
+  const b = $("#drop");
+  if (b) b.onclick = async () => {
+    b.disabled = true;
+    $("#dropmsg").innerHTML = `<span class="spinner"></span> Session dropped in the inbox. Sthira reads it in a few seconds…`;
+    try { await j("/api/demo/drop", {method: "POST"}); } catch (e) { $("#dropmsg").textContent = e.message; }
+    setTimeout(() => { b.disabled = false; }, 8000);
+  };
 }
 setInterval(loadActivity, 5000);
 

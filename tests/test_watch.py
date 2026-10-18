@@ -74,3 +74,21 @@ def test_bad_file_does_not_stop_the_scan(tmp_path, monkeypatch):
     con = store.connect(tmp_path / "t.db")
     events = watch.scan_once(con, [d])
     assert any(e.error for e in events) and any(e.entries == 1 for e in events)
+
+
+def test_file_dropped_after_an_empty_first_pass_is_not_skipped(tmp_path, monkeypatch):
+    """Regression: 'first run' used to be inferred from an empty table, so with nothing in the folders at the first scan
+    every later pass looked like a first run too and silently marked new files as seen."""
+    monkeypatch.setattr(llm, "chat_json", lambda *a, **k: FAKE)
+    inbox = tmp_path / "inbox"
+    inbox.mkdir()
+    con = store.connect(tmp_path / "t.db")
+    assert watch.scan_once(con, [inbox], first_run_backfill=False) == []  # first pass: nothing there yet
+    _write(inbox / "2026-10-18-plan.md", "Ojas: we use SQLite for search.\n")
+    events = watch.scan_once(con, [inbox], first_run_backfill=False)
+    assert len(events) == 1 and events[0].entries == 1
+
+
+def test_inbox_only_mode_never_includes_claude_history(tmp_path, monkeypatch):
+    monkeypatch.setenv("STHIRA_DB", str(tmp_path / "x.db"))
+    assert watch.default_dirs(inbox_only=True) == [tmp_path / "inbox"]
