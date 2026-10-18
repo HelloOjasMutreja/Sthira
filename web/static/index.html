@@ -423,6 +423,58 @@ body.palopen{overflow:hidden}
 .chart canvas{display:block;max-width:100%}
 @media (max-width:600px){.charts{grid-template-columns:minmax(0,1fr)}}
 
+/* ---------- evidence: the offline evaluation (eval/README.md), with its limits ---------- */
+.evstamp{border:3px solid var(--ink);border-radius:10px;padding:3px 12px;font-size:13px;font-weight:800;background:var(--paper);box-shadow:3px 3px 0 var(--ink);white-space:nowrap}
+.evgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;align-items:start;margin-top:8px}
+.evgrid>*{min-width:0}
+.evcard{position:relative;border:3px solid var(--ink);border-radius:22px;background:var(--paper);padding:26px 20px 20px;box-shadow:var(--shadow);margin-top:14px}
+.evcard .kind{left:18px}
+.evcard h3{margin:0 0 4px;font-size:24px;line-height:1.1;letter-spacing:-.025em}
+.evcard .sub{margin:0 0 14px;font-size:15px}
+.evbig{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-weight:800;letter-spacing:-.045em;line-height:1;margin:6px 0 8px}
+.evbig s{font-size:44px;color:var(--ink-2);text-decoration-color:var(--madder);text-decoration-thickness:4px}
+.evbig b{font-size:60px;color:#0d7d66}
+.evbig i{display:grid;place-items:center;width:38px;height:38px;border:3px solid var(--ink);border-radius:50%;background:var(--saffron);font:800 20px/1 var(--display);letter-spacing:0}
+.evcap{margin:0 0 14px;font-size:14px;font-weight:600;color:var(--ink-2)}
+.evtable{border:3px solid var(--ink);border-radius:14px;background:#fff;overflow-x:auto}
+.evtable table{width:100%;border-collapse:collapse;font-size:14px}
+.evtable th,.evtable td{padding:7px 10px;text-align:right;white-space:nowrap}
+.evtable th:first-child,.evtable td:first-child{text-align:left;white-space:normal;min-width:9em}
+.evtable th{font-size:12px;font-weight:800;color:var(--ink-2);border-bottom:2px solid var(--ink)}
+.evtable td{font-weight:700;border-top:2px solid var(--line)}
+.evtable tr:first-child td{border-top:0}
+.evtable td small{display:block;font-size:12px;font-weight:600;color:var(--ink-2)}
+.evtable tr.hl td{background:var(--saffron-soft)}
+.evruns{display:grid;gap:12px}
+.evrun{border:3px solid var(--ink);border-radius:14px;background:#fff;padding:10px 12px}
+.evrun.win{background:var(--jade-soft);border-color:var(--ink);box-shadow:3px 3px 0 var(--jade)}
+.evrun .evh{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.evrun .evh b{font-size:15px;line-height:1.25}
+.evrun .evh span{font-size:30px;font-weight:800;letter-spacing:-.03em;line-height:1;white-space:nowrap}
+.evrun.win .evh span{color:#0d7d66}
+.pips{display:flex;gap:5px;margin:8px 0 6px}
+.pips i{flex:1;max-width:34px;height:12px;border:2px solid var(--ink);border-radius:6px;background:#fff}
+.pips i.on{background:var(--madder)}
+.evrun.win .pips i.on{background:var(--jade)}
+.evrun small{display:block;font-size:13px;font-weight:600;color:var(--ink-2)}
+.evnote{margin:14px 0 0;border:2px dashed var(--ink);border-radius:12px;padding:9px 12px;background:#fff7e0;font-size:14px;font-weight:600}
+.evnums{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
+.evnums div{border:3px solid var(--ink);border-radius:14px;background:#fff;padding:8px 10px;text-align:center}
+.evnums b{display:block;font-size:38px;font-weight:800;letter-spacing:-.04em;line-height:1}
+.evnums span{font-size:13px;font-weight:600;color:var(--ink-2)}
+.evlist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.evlist li{border-left:4px solid var(--jade);padding:0 0 0 10px;font:italic 500 16px/1.4 var(--inscribe);overflow-wrap:anywhere}
+.evwrong{margin-top:14px;border:2px dashed var(--ink);border-radius:12px;background:var(--madder-soft);padding:10px 12px}
+.evwrong ul{margin:0;padding:0 0 0 18px;display:grid;gap:6px;font-size:14px;overflow-wrap:anywhere}
+.evcard .dsec{margin:14px 0 8px}
+.evwrong .dsec{margin:0 0 6px;color:var(--ink)}
+.evlimits{margin-top:24px;border:3px dashed var(--ink);border-radius:18px;background:var(--paper);padding:16px 20px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 24px;align-items:center}
+.evlimits ul{margin:0;padding:0 0 0 18px;display:grid;gap:4px;font-size:15px}
+.evlimits .dsec{margin:0 0 6px}
+@media (max-width:1100px){.evbig s{font-size:36px}.evbig b{font-size:48px}}
+@media (max-width:900px){.evgrid{grid-template-columns:minmax(0,1fr)}.evlimits{grid-template-columns:minmax(0,1fr)}.evlimits .btn{justify-self:start}}
+@media (max-width:600px){.evcard{padding:24px 16px 16px}.evlimits{padding:14px 16px}.evtable th,.evtable td{padding:7px 8px}.evtable th:first-child,.evtable td:first-child{min-width:8em}}
+
 @media (max-width:900px){
   .hero,.two{grid-template-columns:1fr}
   .conf{grid-template-columns:1fr}.conf .vs{height:30px}
@@ -546,6 +598,15 @@ body.palopen{overflow:hidden}
         </div>
       </div>
     </div>
+  </section>
+
+  <section class="sec" id="evidence" aria-labelledby="evtitle" hidden>
+    <div class="sechead">
+      <div><h2 id="evtitle">Evidence: does it actually work?</h2><p class="sub">The offline evaluation from <code>eval/README.md</code>: a small hand-built scenario, scored against a gold list. These are fixed numbers from that run, not this page's ledger. The live ring in “It learns from you” is that.</p></div>
+      <span class="evstamp" id="evdate">offline eval</span>
+    </div>
+    <div class="evgrid" id="evgrid"></div>
+    <div class="evlimits" id="evlimits"></div>
   </section>
 
   <footer>Built at Hacktoberfest Hack Day Bengaluru 2026 for Track 2, O2: adaptive AI with memory and self-correction. It runs on Qwen3 through Ollama on your own machine. This page may be using a hosted open-weight model instead, and says which one at the top. <a href="https://github.com/HelloOjasMutreja/Sthira">Source on GitHub</a>.</footer>
@@ -1066,6 +1127,10 @@ function tour() {
     const room = innerHeight - (narrow ? 280 : 24);  // leave space under the decision for the popover on phones
     if (s.bottom - a.top + 12 <= room) scrollBy({top: a.top - 12, behavior: reduced ? "auto" : "smooth"});
   };
+  // The evidence card closes the tour when /api/eval loaded, with the numbers it served.
+  const ev = !$("#evidence").hidden && evidence, crit = ev && ev.checks.rows.find(r => r.winner), single = ev && ev.checks.rows.find(r => !r.winner);
+  const evStep = ev && crit && single ? {element: "#evcritic", popover: {title: "And the honest numbers", side: "top", align: "start",
+    description: `From the offline evaluation: the self-correction critic took contradiction checks from ${single.correct}/${single.total} to ${crit.correct}/${crit.total}, and we ran Sthira on its own build. Smoke-test numbers, with their limits. That's the tour.`}} : null;
   const d = window.driver.js.driver({
     showProgress: true, progressText: "{{current}} of {{total}}", nextBtnText: "Next", prevBtnText: "Back", doneBtnText: "Done",
     popoverClass: "sthira-tour", overlayColor: "#161a44", overlayOpacity: .55, stagePadding: 16, stageRadius: 22,
@@ -1095,7 +1160,8 @@ function tour() {
       {element: "#importbox", popover: {title: "Feed it your history", side: "top", align: "start",
         description: "Drop a ChatGPT or Claude export, a Claude Code session or a meeting transcript. A local open-weight model reads it and cites every quote."}},
       {element: "#agentsbox", popover: {title: "Every agent reads it", side: "top", align: "start",
-        description: "The ledger goes into AGENTS.md and CLAUDE.md, and over MCP agents call check before they act. That's the tour."}},
+        description: "The ledger goes into AGENTS.md and CLAUDE.md, and over MCP agents call check before they act." + (evStep ? "" : " That's the tour.")}},
+      ...(evStep ? [evStep] : []),
     ],
   });
   d.drive();
@@ -1265,6 +1331,7 @@ const SECTIONS = [
   ["Insights", "#insightsbox", null, "charts sources months stats"],
   ["Feed it your history", "#importbox", null, "import upload file export"],
   ["What every agent reads", "#agentsbox", null, "agents.md claude.md mcp sync"],
+  ["Evidence", "#evidence", null, "eval evaluation proof numbers precision recall critic dogfood limits does it work"],
 ];
 function goTo(sel, focusSel) {
   const t = $(sel); if (!t) return;
@@ -1437,6 +1504,55 @@ function drawInsights() {
   }
 }
 
+/* ---------- evidence: the offline evaluation from eval/README.md, served by /api/eval ---------- */
+// Static numbers from one recorded run, not the live ledger (that is the ring in "It learns from you"). Every string goes
+// through esc(); every number through pct() or Number().
+let evidence = null;
+const pct = x => `${Math.round(Number(x) * 100)}%`;
+function renderEvidence(ev) {
+  const ex = ev.extraction, h = ex.headline, ch = ev.checks, dog = ev.dogfood;
+  const learn = `<article class="evcard" id="evlearn"><span class="kind">Learning</span>
+    <h3>It learns from corrections</h3>
+    <p class="sub">Extraction precision on conversations it had never seen, before and after one round of rejections became rules.</p>
+    <div class="evbig" role="img" aria-label="Precision rose from ${pct(h.before)} to ${pct(h.after)}"><s>${pct(h.before)}</s><i aria-hidden="true">→</i><b>${pct(h.after)}</b></div>
+    <p class="evcap">${esc(h.model)} · recall ${pct(h.recall)} against the gold list</p>
+    <div class="evtable" role="region" aria-label="Extraction precision by model" tabindex="0"><table>
+      <thead><tr><th scope="col">Model</th><th scope="col">Before</th><th scope="col">After</th><th scope="col">Recall</th></tr></thead>
+      <tbody>${ex.rows.map(r => `<tr class="${r.headline ? "hl" : ""}"><td>${esc(r.model)}<small>${esc(r.run)}</small></td>
+        <td>${Number(r.before).toFixed(2)}</td><td>${Number(r.after).toFixed(2)}</td><td>${Number(r.recall).toFixed(2)}</td></tr>`).join("")}</tbody>
+    </table></div>
+    <p class="evcap" style="margin:10px 0 0">Every model also caught ${ex.rows.every(r => r.caught === r.drifts) ? `both agent drifts (${Number(ex.rows[0].caught)} / ${Number(ex.rows[0].drifts)})` : "the agent's drifts"} in the demo session.</p>
+  </article>`;
+  const runs = ch.rows.map(r => `<div class="evrun ${r.winner ? "win" : ""}">
+      <div class="evh"><b>${esc(r.pipeline)}</b><span>${Number(r.correct)}/${Number(r.total)}</span></div>
+      <div class="pips" role="img" aria-label="${Number(r.correct)} of ${Number(r.total)} correct">${Array.from({length: Number(r.total)}, (_, i) => `<i class="${i < r.correct ? "on" : ""}"></i>`).join("")}</div>
+      <small>${esc(r.note)} · avg ${esc(r.latency)} per check</small></div>`).join("");
+  const correct = `<article class="evcard" id="evcritic"><span class="kind commitment">Self-correction</span>
+    <h3>It corrects its own mistakes</h3>
+    <p class="sub">${esc(ch.cases)} Model: ${esc(ch.model)}.</p>
+    <div class="evruns">${runs}</div>
+    <p class="evnote">${esc(ch.critic)}</p>
+  </article>`;
+  const ours = `<article class="evcard" id="evdog"><span class="kind lesson">Dogfood</span>
+    <h3>We ran it on ourselves</h3>
+    <p class="sub">${esc(dog.what)}, read by ${esc(dog.model)}.</p>
+    <div class="evnums"><div><b>${Number(dog.messages)}</b><span>messages read</span></div><div><b>${Number(dog.entries)}</b><span>entries extracted</span></div></div>
+    <p class="dsec">Decisions it found</p>
+    <ul class="evlist">${dog.right.map(d => `<li>“${esc(d)}”</li>`).join("")}</ul>
+    <div class="evwrong"><p class="dsec">What it got wrong</p><ul>${dog.wrong.map(w => `<li>${esc(w)}</li>`).join("")}</ul></div>
+    <p class="evcap" style="margin:12px 0 0">${esc(dog.bug)}</p>
+  </article>`;
+  $("#evgrid").innerHTML = learn + correct + ours;
+  $("#evlimits").innerHTML = `<div><p class="dsec">Limits</p><ul>${ev.limits.map(l => `<li>${esc(l)}</li>`).join("")}</ul></div>
+    <a class="btn small" href="${esc(ev.url)}" target="_blank" rel="noopener">The full evaluation, and how to rerun it ↗</a>`;
+  $("#evdate").textContent = `offline eval · ${day(ev.date)}`;
+  $("#evidence").hidden = false;
+}
+async function loadEvidence() {
+  try { evidence = await j("/api/eval"); renderEvidence(evidence); }
+  catch (er) { evidence = null; $("#evidence").hidden = true; }  // a nicety: without it the page still works
+}
+
 /* ---------- boot ---------- */
 async function load() {
   entries = await j("/api/entries");
@@ -1446,6 +1562,7 @@ async function load() {
 }
 j("/api/meta").then(m => $("#model").textContent = m.model).catch(() => $("#model").textContent = "offline");
 load();
+loadEvidence();
 </script>
 </body>
 </html>

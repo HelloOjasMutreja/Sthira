@@ -338,6 +338,13 @@ def stats():
     return api.feedback_stats(con=con())
 
 
+@app.get("/api/eval")
+def eval_summary():
+    """The offline evaluation's headline numbers, transcribed from eval/README.md, for the evidence panel. Static: unlike
+    /api/stats it does not come from this ledger."""
+    return json.loads((HERE / "eval_summary.json").read_text(encoding="utf-8"))
+
+
 @app.get("/api/agents-md")
 def agents_md():
     from sthira import sync

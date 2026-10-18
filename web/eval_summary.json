@@ -1,0 +1,45 @@
+{
+  "source": "eval/README.md",
+  "url": "https://github.com/HelloOjasMutreja/Sthira/blob/main/eval/README.md",
+  "date": "2026-10-18",
+  "setup": "Laptop, Ollama. The demo scenario: two ChatGPT exports, a meeting transcript and a Claude Code session, scored against a 10-item gold list.",
+  "extraction": {
+    "headline": {"model": "qwen3:4b", "before": 0.60, "after": 0.71, "recall": 0.80},
+    "what": "Precision is the share of proposed entries the reviewer settled. Before: phase 1, no feedback. After: phase 2, on unseen conversations, with the rules learned from phase 1 rejections.",
+    "rows": [
+      {"model": "qwen3:4b", "run": "run 1, early prompt", "before": 0.40, "after": 0.57, "recall": 0.60, "caught": 2, "drifts": 2},
+      {"model": "qwen3:4b", "run": "run 2, current prompt", "before": 0.60, "after": 0.71, "recall": 0.80, "caught": 2, "drifts": 2, "headline": true},
+      {"model": "qwen3:8b", "run": "no extraction mistakes, so nothing to learn", "before": 1.00, "after": 1.00, "recall": 0.80, "caught": 2, "drifts": 2}
+    ]
+  },
+  "checks": {
+    "model": "qwen3:4b",
+    "cases": "Three real contradictions and three non-contradictions, two of them \"add a cache in front of the database\" traps.",
+    "rows": [
+      {"pipeline": "Single pass", "correct": 4, "total": 6, "latency": "~15 s", "note": "Both cache traps flagged as contradictions"},
+      {"pipeline": "Single pass + self-correction critic", "correct": 6, "total": 6, "latency": "~22 s", "note": "The critic drops both false alarms", "winner": true}
+    ],
+    "critic": "The critic runs only when the first pass claims a conflict. It asks whether the new work stops using, migrates away from or goes against what was chosen, and reasons before it answers."
+  },
+  "dogfood": {
+    "what": "The Claude Code session in which Sthira was built",
+    "messages": 143,
+    "entries": 24,
+    "model": "qwen3.8-27b, with gpt-oss-120b as fallback, on a free hosted tier",
+    "right": [
+      "The project will be named Sthira",
+      "The pitch should not rely on the 'Hacktoberfest PR' angle because PRs no longer earn rewards in the 2026 program",
+      "The tool will run on a local open-weight model to ensure user data privacy"
+    ],
+    "wrong": [
+      "Several entries are conversation chatter attributed to \"the user\", such as \"The user prefers the assistant to continue work autonomously\".",
+      "An earlier run on qwen3:4b recorded \"use Stet as the project name\", a name we later dropped. The Sthira decision supersedes it and the history stays."
+    ],
+    "bug": "The run also found a real bug: a first pass read only 17 of 143 messages and skipped the rest silently. Fixed in PR #17."
+  },
+  "limits": [
+    "One small scenario, built by the same team that built the system: smoke-test numbers, not a benchmark.",
+    "The reviewer is simulated (a keyword match against gold) and judges borderline items strictly.",
+    "Runs are not seeded, so expect variation between runs, especially on 4B models."
+  ]
+}

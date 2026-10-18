@@ -65,6 +65,7 @@ api.sync(path: str = "AGENTS.md") -> str                        # returns the wr
 | POST | `/api/ingest` | multipart file + `kind` | `{messages, sources}` |
 | POST | `/api/extract` | `{limit}` | `Entry[]` |
 | GET | `/api/stats` | none | feedback stats + counts |
+| GET | `/api/eval` | none | `{source, url, date, setup, extraction: {headline, what, rows: [{model, run, before, after, recall, caught, drifts, headline?}]}, checks: {model, cases, rows: [{pipeline, correct, total, latency, note, winner?}], critic}, dogfood: {what, messages, entries, model, right: [str], wrong: [str], bug}, limits: [str]}`: the offline evaluation's headline numbers, a static file (`web/eval_summary.json`) transcribed from `eval/README.md`. Not computed from the ledger; `/api/stats` is the live one |
 | GET | `/api/demo-session` | none | `{title, messages: [{role, text}]}`: the demo Claude Code session (`demo/claude_code/session.jsonl`) parsed with `sthira.ingest.claude_code.parse`, for the in-browser agent replay; empty `messages` if the file is missing |
 
 ## Environment
