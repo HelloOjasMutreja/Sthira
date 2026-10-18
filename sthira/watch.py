@@ -32,6 +32,7 @@ class Event:
     messages: int = 0
     entries: int = 0
     error: str = ""
+    alerts: int = 0
     new_entry_ids: list[str] = field(default_factory=list)
 
 
@@ -63,6 +64,7 @@ def scan_once(con: sqlite3.Connection, dirs: list[Path], settle: float = SETTLE_
             continue
         if now - mtime < settle:
             continue  # still being written
+        name = Path(path).name
         ev = Event(path=path)
         try:
             parsed = parse_path(path)
@@ -73,6 +75,7 @@ def scan_once(con: sqlite3.Connection, dirs: list[Path], settle: float = SETTLE_
                 ids.append(sid)
             ev.messages = msgs
             if ids and msgs:
+                ev.alerts = _check_agent_proposals(con, ids, name)
                 created = api.extract(con=con, source_ids=ids)
                 ev.entries, ev.new_entry_ids = len(created), [e.id for e in created]
         except Exception as e:  # one bad file must never stop the watcher
@@ -81,7 +84,43 @@ def scan_once(con: sqlite3.Connection, dirs: list[Path], settle: float = SETTLE_
         con.commit()
         if ev.messages or ev.error:
             events.append(ev)
+            _record(con, ev, name)
     return events
+
+
+MAX_PROPOSALS_CHECKED = 2   # per file per pass: the newest things an agent said it would do
+MIN_PROPOSAL_CHARS = 80     # skip "ok" and "done" style replies
+
+
+def _check_agent_proposals(con: sqlite3.Connection, source_ids: list[str], name: str) -> int:
+    """If an agent's newest messages go against a settled decision, raise an alert. Returns how many alerts."""
+    if not store.list_entries(con, status="settled"):
+        return 0
+    marks = ",".join("?" * len(source_ids))
+    rows = con.execute(
+        f"SELECT text FROM messages WHERE source_id IN ({marks}) AND extracted = 0 AND role = 'assistant' "
+        f"AND length(text) >= ? ORDER BY rowid DESC LIMIT ?", [*source_ids, MIN_PROPOSAL_CHARS, MAX_PROPOSALS_CHECKED]
+    ).fetchall()
+    alerts = 0
+    for r in rows:
+        verdict = api.check(r["text"][:4000], con=con)
+        if verdict.verdict != "contradicts":
+            continue
+        for c in verdict.conflicts:
+            alerts += 1
+            store.add_activity(con, "alert", f"An agent in {name} is going against a decision", {
+                "agent_said": r["text"][:400], "decision": c.entry.statement, "decided_at": c.entry.decided_at,
+                "source": c.entry.source.title, "quote": c.entry.source.quote, "why": c.explanation,
+                "entry_id": c.entry.id})
+    return alerts
+
+
+def _record(con: sqlite3.Connection, ev: Event, name: str) -> None:
+    if ev.error:
+        store.add_activity(con, "error", f"Couldn't read {name}", {"error": ev.error, "path": ev.path})
+    else:
+        store.add_activity(con, "read", f"Read {name}: {ev.messages} new messages, {ev.entries} to review",
+                           {"path": ev.path, "messages": ev.messages, "entries": ev.entries, "alerts": ev.alerts})
 
 
 def run(dirs: list[Path] | None = None, interval: float = 10.0, on_event=None, stop=None) -> None:

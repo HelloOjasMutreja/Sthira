@@ -188,6 +188,12 @@ def extract(body: ExtractBody):
         raise HTTPException(502, f"Model call failed: {e}")
 
 
+@app.get("/api/activity")
+def activity(limit: int = 30):
+    """What the background watcher has done: files read, entries waiting, agents caught going against decisions."""
+    return api.recent_activity(min(max(limit, 1), 100), con=con())
+
+
 @app.get("/api/rules")
 def rules():
     return api.learned_rules(con=con())

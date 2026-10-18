@@ -65,6 +65,13 @@ CREATE TABLE IF NOT EXISTS watched (
     mtime REAL NOT NULL,
     seen_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS activity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts TEXT NOT NULL,
+    kind TEXT NOT NULL,            -- 'read' | 'alert' | 'error'
+    title TEXT NOT NULL,
+    detail TEXT                    -- JSON
+);
 CREATE TABLE IF NOT EXISTS runs (
     id TEXT PRIMARY KEY,
     kind TEXT NOT NULL,
@@ -264,3 +271,17 @@ def start_run(con: sqlite3.Connection, kind: str) -> str:
     con.execute("INSERT INTO runs(id,kind,started_at,feedback_count) VALUES (?,?,?,?)", (rid, kind, now(), n))
     con.commit()
     return rid
+
+
+# ---- activity feed (what the watcher did) ---------------------------------
+
+def add_activity(con: sqlite3.Connection, kind: str, title: str, detail: dict | None = None) -> None:
+    con.execute("INSERT INTO activity(ts,kind,title,detail) VALUES (?,?,?,?)",
+                (now(), kind, title, json.dumps(detail or {})))
+    con.commit()
+
+
+def recent_activity(con: sqlite3.Connection, limit: int = 30) -> list[dict]:
+    rows = con.execute("SELECT id, ts, kind, title, detail FROM activity ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
+    return [{"id": r["id"], "ts": r["ts"], "kind": r["kind"], "title": r["title"], "detail": json.loads(r["detail"] or "{}")}
+            for r in rows]

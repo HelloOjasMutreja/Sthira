@@ -58,6 +58,30 @@ def start_watcher(stop: threading.Event, on_event=None) -> threading.Thread:
     return t
 
 
+def title_for(proposed: int, alerts: int) -> str:
+    """The window title doubles as a badge, so a minimised window still says when something needs you."""
+    bits = ([f"{alerts} alert{'s' if alerts != 1 else ''}"] if alerts else []) + ([f"{proposed} to review"] if proposed else [])
+    return "Sthira" + (f" ({', '.join(bits)})" if bits else "")
+
+
+def _badge_loop(window, stop: threading.Event, interval: float = 5.0) -> None:
+    from . import store
+
+    seen_alerts = 0
+    while not stop.wait(interval):
+        try:
+            con = store.connect()
+            try:
+                proposed = con.execute("SELECT COUNT(*) FROM entries WHERE status = 'proposed'").fetchone()[0]
+                total_alerts = con.execute("SELECT COUNT(*) FROM activity WHERE kind = 'alert'").fetchone()[0]
+            finally:
+                con.close()
+            unseen = max(0, total_alerts - seen_alerts) if seen_alerts or total_alerts else 0
+            window.set_title(title_for(proposed, unseen))
+        except Exception:
+            continue  # the title is a nicety; never let it take the app down
+
+
 def main(demo: bool = False, watch_files: bool = True, width: int = 1180, height: int = 860) -> None:
     try:
         import webview
@@ -68,9 +92,9 @@ def main(demo: bool = False, watch_files: bool = True, width: int = 1180, height
     stop = threading.Event()
     if watch_files:
         start_watcher(stop)
-    webview.create_window("Sthira", f"http://127.0.0.1:{port}", width=width, height=height, min_size=(760, 560))
+    window = webview.create_window("Sthira", f"http://127.0.0.1:{port}", width=width, height=height, min_size=(760, 560))
     try:
-        webview.start()  # blocks until the window is closed
+        webview.start(lambda: _badge_loop(window, stop), debug=False)  # blocks until the window is closed
     finally:
         stop.set()
         server.should_exit = True

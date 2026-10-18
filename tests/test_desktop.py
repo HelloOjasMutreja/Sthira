@@ -38,3 +38,10 @@ def test_demo_flag_keeps_the_demo_ledger(tmp_path, monkeypatch):
     finally:
         server.should_exit = True
         thread.join(timeout=5)
+
+
+def test_window_title_is_a_badge():
+    assert desktop.title_for(0, 0) == "Sthira"
+    assert desktop.title_for(3, 0) == "Sthira (3 to review)"
+    assert desktop.title_for(0, 1) == "Sthira (1 alert)"
+    assert desktop.title_for(2, 2) == "Sthira (2 alerts, 2 to review)"
