@@ -59,6 +59,7 @@ api.sync(path: str = "AGENTS.md") -> str                        # returns the wr
 | Method | Path | Body / query | Returns |
 |---|---|---|---|
 | GET | `/api/entries` | `status, kind, q` | `Entry[]` |
+| GET | `/api/entries/{id}/context` | `around` (default 2, clamped 0 to 5) | `{title, messages: [{role, ts, text, match}]}`: the source conversation around the entry's quote. `source.locator` is split on `" / "` into conv_id and msg_id; up to `around` stored messages either side of the quoted one, ordered by `COALESCE(ts, '')` then rowid, with `match: true` on the quoted message and each `text` cut to 1500 characters. 404 for an unknown entry; empty `messages` if the message is not stored |
 | POST | `/api/entries/{id}/review` | `{action, note}` | `Entry` |
 | POST | `/api/check` | `{text}` | `Verdict`, plus `"cached": true` when an identical check against the same settled ledger and feedback ran in the last 10 minutes (fallback verdicts are never cached) |
 | POST | `/api/ingest` | multipart file + `kind` | `{messages, sources}` |

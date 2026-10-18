@@ -85,6 +85,26 @@ def entries(status: str | None = None, kind: str | None = None, q: str | None = 
     return [e.model_dump() for e in api.list_entries(status, kind, q, con=con())]
 
 
+@app.get("/api/entries/{entry_id}/context")
+def entry_context(entry_id: str, around: int = 2):
+    """The source conversation around an entry's quote, so a decision can be read where it was made."""
+    c = con()
+    e = store.get_entry(c, entry_id)
+    if e is None:
+        raise HTTPException(404, "entry not found")
+    conv_id, _, msg_id = e.source.locator.partition(" / ")
+    rows = c.execute("SELECT msg_id, role, ts, text FROM messages WHERE source_id = ? AND conv_id = ? "
+                     "ORDER BY COALESCE(ts, ''), rowid", (e.source.id, conv_id)).fetchall()
+    idx = next((i for i, r in enumerate(rows) if r["msg_id"] == msg_id), None)
+    if idx is None:
+        return {"title": e.source.title, "messages": []}
+    around = max(0, min(around, 5))
+    window = rows[max(0, idx - around): idx + around + 1]
+    return {"title": e.source.title, "messages": [
+        {"role": r["role"], "ts": r["ts"], "text": (r["text"] or "")[:1500], "match": r["msg_id"] == msg_id}
+        for r in window]}
+
+
 @app.post("/api/entries/{entry_id}/review")
 def review(entry_id: str, body: ReviewBody):
     try:

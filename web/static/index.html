@@ -303,6 +303,75 @@ dialog .row{justify-content:flex-end}
 .driver-popover.sthira-tour .driver-popover-arrow-side-bottom{border-bottom-color:var(--ink)}
 @media (prefers-reduced-motion:no-preference){.toast.nudge{animation:toastin .35s cubic-bezier(.2,.9,.3,1.2)}}
 
+/* ---------- entry drawer: one decision, read where it was made ---------- */
+.tab-card[data-id]{cursor:pointer}
+.tab-card .open{float:right;margin-left:8px;font-size:12px;font-weight:800;color:var(--ink-2);border-bottom:2px solid var(--saffron)}
+.stone.opens{cursor:pointer}
+.stone.opens:hover{background:#ffe2a6}
+.stone .open{font-size:12px;font-weight:800;color:var(--ink);border-bottom:2px solid var(--saffron);margin-left:6px;white-space:nowrap}
+body.locked{overflow:hidden}
+.scrim{position:fixed;inset:0;background:rgba(22,26,68,.55);z-index:40}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,100vw);z-index:41;background:var(--paper);border-left:3px solid var(--ink);box-shadow:-7px 0 0 var(--ink);display:flex;flex-direction:column;outline:none}
+.drawer[hidden],.scrim[hidden]{display:none}
+.dhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:14px 18px;border-bottom:3px solid var(--ink);background:var(--chalk)}
+.dhead .kind{position:static}
+.dhead .x{margin-left:auto;all:unset;cursor:pointer;display:grid;place-items:center;width:36px;height:36px;border:2px solid var(--ink);border-radius:10px;background:var(--paper);font-size:22px;font-weight:800;line-height:1;box-shadow:3px 3px 0 var(--ink)}
+.dhead .x:hover{background:var(--madder-soft)}
+.dhead .x:focus-visible{outline:3px solid var(--saffron);outline-offset:3px}
+.dhead .tag{margin:0}
+.tag.settled{background:var(--jade-soft)} .tag.proposed{background:var(--saffron-soft)} .tag.superseded{background:#eceff8} .tag.rejected{border-style:dashed}
+.tag.confirmed{background:var(--jade);color:#04332a} .tag.quarantined{background:var(--madder-soft);border-style:dashed}
+.dbody{overflow-y:auto;overscroll-behavior:contain;padding:18px 20px 28px;display:grid;gap:18px;align-content:start}
+.dbody>*{min-width:0}
+.dbody h2{font-size:clamp(24px,3vw,30px);line-height:1.1;overflow-wrap:anywhere}
+.dbody .because{margin:0}
+.dbody .stone blockquote{clip-path:none;font-size:18px;overflow-wrap:anywhere}
+.dbody .stone .plaque{overflow-wrap:anywhere}
+.quar{border:2px dashed var(--ink);border-radius:12px;padding:9px 12px;background:#fff7e0;font-size:14px;font-weight:600;margin:0}
+.dsec{margin:0 0 8px;font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2)}
+.alts{display:flex;gap:7px;flex-wrap:wrap}
+.alts span{border:2px solid var(--ink);border-radius:9px;padding:2px 9px;font-size:14px;font-weight:700;background:#fff;text-decoration:line-through;text-decoration-color:var(--madder);text-decoration-thickness:2px;overflow-wrap:anywhere}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;border:3px solid var(--ink);border-radius:14px;background:#fff;padding:12px 14px;font-size:14px}
+.facts dt{font-weight:800}
+.facts dd{margin:0;color:var(--ink-2);min-width:0;overflow-wrap:anywhere}
+.facts code{font:13px ui-monospace,Consolas,monospace;color:var(--ink)}
+.cbar{display:flex;align-items:center;gap:8px}
+.cbar i{flex:1;height:12px;border:2px solid var(--ink);border-radius:8px;background:var(--line);overflow:hidden;max-width:180px}
+.cbar i b{display:block;height:100%;background:var(--jade)}
+.ctx{display:grid;gap:8px}
+.bub{border:2px solid var(--line);border-radius:12px;background:#fff;padding:7px 11px;font-size:14px;line-height:1.45;max-width:92%;overflow-wrap:anywhere;white-space:pre-wrap}
+.bub.user{justify-self:end;background:#eef4ff}
+.bub .w{display:block;font-size:11px;font-weight:800;color:var(--ink-2);white-space:normal;margin-bottom:2px}
+.bub.match{border:3px solid var(--ink);background:var(--saffron-soft);box-shadow:3px 3px 0 var(--ink)}
+.bub.match .w::after{content:" · quoted";color:var(--ink)}
+.dnote{margin:0;color:var(--ink-2);font:italic 16px/1.45 var(--inscribe)}
+.chain{list-style:none;margin:0;padding:0 0 0 6px;display:grid;gap:10px;position:relative}
+.chain::before{content:"";position:absolute;left:15px;top:12px;bottom:12px;width:4px;background:repeating-linear-gradient(var(--ink) 0 6px,transparent 6px 11px);border-radius:3px}
+.chain li{position:relative;padding-left:32px}
+.chain li::before{content:"";position:absolute;left:3px;top:12px;width:14px;height:14px;border:3px solid var(--ink);border-radius:50%;background:var(--paper)}
+.chain li.now::before{background:var(--saffron)}
+.chain button{all:unset;cursor:pointer;display:block;border:2px solid var(--ink);border-radius:12px;background:#fff;padding:7px 11px;box-shadow:3px 3px 0 var(--ink);max-width:100%;box-sizing:border-box}
+.chain button:hover{background:var(--saffron-soft)}
+.chain button:focus-visible{outline:3px solid var(--saffron);outline-offset:3px}
+.chain li.now button{background:var(--saffron-soft);cursor:default}
+.chain li.old b{text-decoration:line-through;text-decoration-color:var(--madder);text-decoration-thickness:2px}
+.chain b{display:block;font-size:15px;line-height:1.3;overflow-wrap:anywhere}
+.chain small{display:block;font-size:12px;color:var(--ink-2);font-weight:600}
+.dfoot{display:flex;gap:10px;flex-wrap:wrap;padding-top:4px}
+@media (prefers-reduced-motion:no-preference){
+  .drawer:not([hidden]){animation:slidein .28s cubic-bezier(.2,.9,.3,1.1)}
+  .scrim:not([hidden]){animation:fadein .2s}
+}
+@keyframes slidein{from{transform:translateX(105%)}}
+@keyframes sheetin{from{transform:translateY(105%)}}
+@keyframes fadein{from{opacity:0}}
+@media (max-width:600px){
+  .drawer{top:auto;left:0;width:100%;max-height:88vh;border-left:0;border-top:3px solid var(--ink);border-radius:22px 22px 0 0;box-shadow:0 -6px 0 var(--ink)}
+  .dhead{border-radius:19px 19px 0 0;padding:12px 16px}
+  .dbody{padding:16px 16px 26px}
+  @media (prefers-reduced-motion:no-preference){.drawer:not([hidden]){animation:sheetin .28s cubic-bezier(.2,.9,.3,1.1)}}
+}
+
 @media (max-width:900px){
   .hero,.two{grid-template-columns:1fr}
   .conf{grid-template-columns:1fr}.conf .vs{height:30px}
@@ -416,6 +485,11 @@ dialog .row{justify-content:flex-end}
   <footer>Built at Hacktoberfest Hack Day Bengaluru 2026 for Track 2, O2: adaptive AI with memory and self-correction. It runs on Qwen3 through Ollama on your own machine. This page may be using a hosted open-weight model instead, and says which one at the top. <a href="https://github.com/HelloOjasMutreja/Sthira">Source on GitHub</a>.</footer>
 </div>
 
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dtitle" tabindex="-1" hidden>
+  <div class="dhead" id="dhead"></div>
+  <div class="dbody" id="dbody"></div>
+</aside>
 <div class="toasts" id="toasts"></div>
 <dialog id="ask"><form method="dialog">
   <h3 id="askt"></h3><p id="asks"></p><textarea id="askv"></textarea>
@@ -489,7 +563,7 @@ $("#chips").innerHTML = EXAMPLES.map((e, i) => `<button class="chip" data-i="${i
 $("#chips").onclick = ev => { const i = ev.target.dataset.i; if (i !== undefined) { $("#text").value = EXAMPLES[i]; runCheck(); } };
 $("#go").onclick = () => runCheck();
 $("#text").addEventListener("keydown", e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) runCheck(); });
-addEventListener("keydown", e => { if (e.key === "/" && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) { e.preventDefault(); $("#text").focus(); } });
+addEventListener("keydown", e => { if (e.key === "/" && $("#drawer").hidden && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) { e.preventDefault(); $("#text").focus(); } });
 
 function renderIdle() {
   const s = entries.filter(e => e.status === "settled");
@@ -564,12 +638,13 @@ async function renderOverruled(v, text) {
     <div class="link" aria-hidden="true"></div>
     <div class="stone" id="stone"><p class="who" style="margin-bottom:4px">But you decided</p>
       <h3>${esc(e.statement)}</h3><blockquote>“${esc(e.source.quote)}”</blockquote>
-      <div class="plaque">${day(e.decided_at)} · ${esc(e.source.title)}</div></div>
+      <div class="plaque">${day(e.decided_at)} · ${esc(e.source.title)} <span class="open" aria-hidden="true">read in context ↗</span></div></div>
     <p class="why">${esc(c.explanation)}</p>
     ${v.conflicts.length > 1 ? `<p class="fine">${v.conflicts.length - 1} more decision${v.conflicts.length > 2 ? "s" : ""} also conflict.</p>` : ""}
     <div class="row"><button class="btn jade small" id="keep">Keep my decision</button><button class="btn small" id="change">I changed my mind</button><button class="btn small ghost" id="teach">Not a conflict</button></div>
     <p class="fine">${fineNote(v)}</p>`;
   arena.classList.remove("hit"); void arena.offsetWidth; arena.classList.add("hit"); blip("stamp");
+  opensDrawer($("#stone"), e.id);
   $("#keep").onclick = () => { $("#stamp").className = "stamp ok"; $("#stamp").textContent = "KEPT"; $(".said.struck").classList.add("struck"); $(".row").remove(); toast("Kept. Tell your agent to follow it.", "good"); blip("ok"); };
   $("#change").onclick = async () => {
     const why = await ask("Why are you changing this?", "Your reason is saved with the new decision. The old one stays in history.", "e.g. We need multi-region writes now");
@@ -618,8 +693,8 @@ function bounds() {
 function card(e, rewound) {
   const hist = e.status === "superseded";
   const acts = e.status === "proposed" ? `<div class="row" style="margin-top:12px"><button class="btn jade small" data-a="settle" data-id="${e.id}">Settle it</button><button class="btn small ghost" data-a="reject" data-id="${e.id}">Not a decision</button></div>` : "";
-  return `<article class="tab-card ${hist ? "history" : ""} ${e.status === "rejected" ? "rejected" : ""}" data-id="${e.id}">
-    <span class="kind ${e.kind}">${KIND[e.kind] || e.kind}</span>
+  return `<article class="tab-card ${hist ? "history" : ""} ${e.status === "rejected" ? "rejected" : ""}" data-id="${esc(e.id)}" tabindex="0" aria-haspopup="dialog" aria-label="${esc(e.statement)}. Open to read it in its original conversation.">
+    <span class="kind ${e.kind}">${KIND[e.kind] || e.kind}</span><span class="open" aria-hidden="true">open ↗</span>
     <h3>${esc(e.statement)}</h3>
     ${e.rationale ? `<p class="because">Reason: ${esc(e.rationale.replace(/^because\s+/i, ""))}</p>` : ""}
     <blockquote>“${esc(e.source.quote)}”</blockquote>
@@ -648,24 +723,36 @@ $("#rw").oninput = e => {
   else { rewindAt = a + (b - a) * p; $("#rwout").textContent = day(new Date(rewindAt)); }
   renderWall();
 };
-$("#wall").onclick = async e => {
-  const b = e.target.closest("button[data-a]"); if (!b) return;
-  const id = b.dataset.id, cardEl = b.closest(".tab-card");
+// Settle or reject one proposed entry. Shared by the wall cards and the entry drawer. Resolves true once saved.
+async function review(id, action, b, cardEl) {
   let note = null;
-  if (b.dataset.a === "reject") {
+  if (action === "reject") {
     note = await ask("Why isn't this a decision?", "Your reason becomes a rule: Sthira skips similar things from now on.", "e.g. Small talk about a trip, not a project decision", "Reject it");
-    if (note === null) return;
+    if (note === null) return false;
   }
   b.disabled = true;
   try {
-    await post(`/api/entries/${id}/review`, {action: b.dataset.a, note: note || null});
-    if (b.dataset.a === "settle") {
-      cardEl.classList.add("thunk");
-      for (let i = 0; i < 9; i++) { const d = document.createElement("i"); d.className = "dust"; d.style.cssText = `--dx:${(i - 4) * 16}px;left:${20 + i * 9}%`; cardEl.appendChild(d); }
-      blip("ok"); toast("Settled. It now guards your agents.", "good"); await sleep(reduced ? 0 : 520);
+    await post(`/api/entries/${encodeURIComponent(id)}/review`, {action, note: note || null});
+    if (action === "settle") {
+      if (cardEl) {
+        cardEl.classList.add("thunk");
+        for (let i = 0; i < 9; i++) { const d = document.createElement("i"); d.className = "dust"; d.style.cssText = `--dx:${(i - 4) * 16}px;left:${20 + i * 9}%`; cardEl.appendChild(d); }
+      }
+      blip("ok"); toast("Settled. It now guards your agents.", "good"); if (cardEl) await sleep(reduced ? 0 : 520);
     } else toast("Got it. Sthira will skip things like that.", "good");
     await load();
-  } catch (er) { b.disabled = false; toast(er.message, "bad"); }
+    return true;
+  } catch (er) { b.disabled = false; toast(er.message, "bad"); return false; }
+}
+$("#wall").onclick = e => {
+  const b = e.target.closest("button[data-a]");
+  if (b) return review(b.dataset.id, b.dataset.a, b, b.closest(".tab-card"));
+  const c = e.target.closest(".tab-card[data-id]");
+  if (c && !getSelection().toString()) openDrawer(c.dataset.id, c);
+};
+$("#wall").onkeydown = e => {
+  const c = e.target.closest(".tab-card[data-id]");
+  if (c && e.target === c && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openDrawer(c.dataset.id, c); }
 };
 
 /* ---------- while you were away ---------- */
@@ -819,6 +906,7 @@ function driftCard(v, said) {
   const stone = mk("div", "stone");
   stone.append(mk("h3", null, e.statement), mk("blockquote", null, `“${e.source.quote}”`), mk("div", "plaque", `${day(e.decided_at)} · ${e.source.title || "source"}`));
   const right = mk("div"); right.append(mk("p", "who", "You decided"), stone);
+  opensDrawer(stone, e.id);
   const vs = mk("div", "vs", "≠"); vs.setAttribute("aria-hidden", "true");
   const conf = mk("div", "conf"); conf.append(left, vs, right);
   box.append(who, conf, mk("p", "why", c.explanation));
@@ -951,6 +1039,140 @@ function offerTour() {
   row.append(go, no); n.append(msg, x, row); $("#toasts").appendChild(n);
 }
 setTimeout(offerTour, reduced ? 300 : 1600);
+
+/* ---------- entry drawer: read a decision where it was made, and its history ---------- */
+// Everything from the ledger goes in through textContent (mk), never innerHTML.
+const STATUS = {settled: "settled", proposed: "to review", superseded: "superseded", rejected: "rejected"};
+const SRC = {chatgpt: "ChatGPT", claude: "Claude", claude_code: "Claude Code", transcript: "Meeting transcript"};
+let drawerFrom = null, drawerId = null, drawerReq = 0;
+const touring = () => document.body.classList.contains("driver-active");
+function opensDrawer(node, id) {
+  if (!node) return;
+  node.classList.add("opens"); node.tabIndex = 0; node.setAttribute("role", "button");
+  node.setAttribute("aria-haspopup", "dialog"); node.setAttribute("aria-label", "Read this decision in its original conversation");
+  node.onclick = () => { if (!touring() && !getSelection().toString()) openDrawer(id, node); };
+  node.onkeydown = ev => { if ((ev.key === "Enter" || ev.key === " ") && !touring()) { ev.preventDefault(); openDrawer(id, node); } };
+}
+// The decision's history along the supersession chain, oldest first.
+function chain(e) {
+  const byId = Object.fromEntries(entries.map(x => [x.id, x])), before = [], after = [];
+  let cur = e;
+  for (let g = 0; g < 20; g++) { const prev = entries.find(x => x.superseded_by === cur.id && x !== e && !before.includes(x)); if (!prev) break; before.unshift(prev); cur = prev; }
+  cur = e;
+  for (let g = 0; g < 20; g++) { const next = byId[cur.superseded_by]; if (!next || next === e || before.includes(next) || after.includes(next)) break; after.push(next); cur = next; }
+  return [...before, e, ...after];
+}
+const sourceLine = e => [SRC[e.source.type] || e.source.type, e.source.title, day(e.decided_at)].filter(Boolean).join(" · ");
+const citation = e => `${e.statement}\n“${e.source.quote}” (${[e.source.title || SRC[e.source.type] || "source", e.source.locator, day(e.decided_at)].filter(Boolean).join(", ")})`;
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); return true; } catch (er) {
+    const ta = mk("textarea"); ta.value = t; ta.setAttribute("readonly", ""); ta.style.cssText = "position:fixed;opacity:0";
+    document.body.append(ta); ta.select(); let ok = false; try { ok = document.execCommand("copy"); } catch (x) {} ta.remove(); return ok;
+  }
+}
+function fact(dl, k, v) { const dd = mk("dd"); if (typeof v === "string") dd.textContent = v || "unknown"; else dd.append(v); dl.append(mk("dt", null, k), dd); }
+function openDrawer(id, from) {
+  const e = entries.find(x => x.id === id); if (!e) return;
+  const d = $("#drawer"), wasOpen = !d.hidden;
+  if (!wasOpen) drawerFrom = from || document.activeElement;
+  drawerId = id; renderDrawer(e);
+  if (!wasOpen) { $("#scrim").hidden = false; d.hidden = false; document.body.classList.add("locked"); }
+  $("#dbody").scrollTop = 0;
+  d.querySelector(".x").focus();
+}
+function closeDrawer() {
+  const d = $("#drawer"); if (d.hidden) return;
+  d.hidden = true; $("#scrim").hidden = true; document.body.classList.remove("locked"); drawerId = null; drawerReq++;
+  // The wall may have re-rendered while it was open; fall back to the same entry's fresh card.
+  let back = drawerFrom && drawerFrom.isConnected ? drawerFrom : null;
+  if (!back && drawerFrom?.dataset?.id) back = document.querySelector(`.tab-card[data-id="${CSS.escape(drawerFrom.dataset.id)}"]`);
+  drawerFrom = null; back?.focus();
+}
+function renderDrawer(e) {
+  const head = $("#dhead"), body = $("#dbody");
+  const x = mk("button", "x", "×"); x.type = "button"; x.setAttribute("aria-label", "Close"); x.onclick = closeDrawer;
+  const trusted = e.trust === "confirmed";
+  head.replaceChildren(mk("span", "kind " + e.kind, KIND[e.kind] || e.kind), mk("span", "tag " + e.status, STATUS[e.status] || e.status),
+    mk("span", "tag " + (trusted ? "confirmed" : "quarantined"), trusted ? "confirmed" : "quarantined"), x);
+  const parts = [];
+  const h = mk("h2", null, e.statement); h.id = "dtitle"; parts.push(h);
+  if (!trusted) parts.push(mk("p", "quar", "Quarantined: agents ignore this until a person confirms it. That way a decision planted in an imported file can't steer your agents."));
+  if (e.rationale) parts.push(mk("p", "because", `Reason: ${e.rationale.replace(/^because\s+/i, "")}`));
+  const stone = mk("div", "stone");
+  stone.append(mk("p", "who", "In your words"), mk("blockquote", null, `“${e.source.quote}”`), mk("div", "plaque", sourceLine(e)));
+  parts.push(stone);
+  if (e.alternatives_rejected?.length) {
+    const sec = mk("div"), alts = mk("div", "alts");
+    e.alternatives_rejected.forEach(a => alts.append(mk("span", null, a)));
+    sec.append(mk("p", "dsec", "Ruled out"), alts); parts.push(sec);
+  }
+  const dl = mk("dl", "facts");
+  fact(dl, "Source", [SRC[e.source.type] || e.source.type, e.source.title].filter(Boolean).join(" · "));
+  fact(dl, "Locator", mk("code", null, e.source.locator || "none"));
+  fact(dl, "Decided", day(e.decided_at));
+  fact(dl, "Recorded", day(e.recorded_at));
+  const pct = Math.round(Math.max(0, Math.min(1, +e.confidence || 0)) * 100), cb = mk("span", "cbar"), bar = mk("i"), fill = mk("b");
+  fill.style.width = pct + "%"; bar.append(fill); bar.setAttribute("aria-hidden", "true"); cb.append(bar, document.createTextNode(pct + "%"));
+  fact(dl, "Confidence", cb); parts.push(dl);
+  const ctxSec = mk("section"), ctx = mk("div", "ctx");
+  ctxSec.setAttribute("aria-label", "In the original conversation");
+  ctx.append(mk("p", "dnote", "Loading the conversation…"));
+  ctxSec.append(mk("p", "dsec", "In the original conversation"), ctx); parts.push(ctxSec);
+  const histSec = mk("section"), ch = chain(e);
+  histSec.setAttribute("aria-label", "History of this decision");
+  histSec.append(mk("p", "dsec", "History of this decision"));
+  if (ch.length < 2) histSec.append(mk("p", "dnote", "No history: this decision hasn't replaced anything, and nothing has replaced it."));
+  else {
+    const ol = mk("ol", "chain");
+    ch.forEach(x => {
+      const li = mk("li", x.id === e.id ? "now" : x.status === "superseded" ? "old" : ""), b = mk("button");
+      b.type = "button"; b.append(mk("b", null, x.statement), mk("small", null, `${day(x.decided_at || x.recorded_at)} · ${STATUS[x.status] || x.status}${x.id === e.id ? " · you are here" : ""}`));
+      if (x.id === e.id) b.setAttribute("aria-current", "true"); else b.onclick = () => openDrawer(x.id);
+      li.append(b); ol.append(li);
+    });
+    histSec.append(ol);
+  }
+  parts.push(histSec);
+  const foot = mk("div", "dfoot");
+  if (e.status === "proposed") {
+    const s = mk("button", "btn jade small", "Settle it"), r = mk("button", "btn small ghost", "Not a decision");
+    s.type = r.type = "button";
+    const act = (b, a) => async () => {
+      if (!await review(e.id, a, b, null)) return;
+      const n = entries.find(y => y.id === e.id);
+      if (n && drawerId === e.id) { renderDrawer(n); $("#dhead .x").focus(); }
+    };
+    s.onclick = act(s, "settle"); r.onclick = act(r, "reject"); foot.append(s, r);
+  }
+  const cp = mk("button", "btn small", "Copy as citation"); cp.type = "button";
+  cp.onclick = async () => { const ok = await copyText(citation(e)); toast(ok ? "Citation copied." : "Couldn't copy. Select the quote instead.", ok ? "good" : "bad"); };
+  foot.append(cp); parts.push(foot);
+  body.replaceChildren(...parts);
+  loadContext(e, ctx);
+}
+async function loadContext(e, box) {
+  const req = ++drawerReq;
+  let c; try { c = await j(`/api/entries/${encodeURIComponent(e.id)}/context?around=2`); } catch (er) { c = null; }
+  if (req !== drawerReq || drawerId !== e.id) return;
+  if (!c || !c.messages.length) { box.replaceChildren(mk("p", "dnote", c ? "The original conversation isn't stored for this entry, so only the quote is shown." : "Couldn't load the conversation. Try again in a moment.")); return; }
+  box.replaceChildren(...c.messages.map(m => {
+    const who = m.role === "user" ? "you" : m.role === "assistant" ? "AI" : String(m.role || "speaker").slice(0, 40);
+    const b = mk("div", "bub" + (m.role === "user" ? " user" : "") + (m.match ? " match" : ""));
+    b.append(mk("span", "w", who + (m.ts ? ` · ${day(m.ts)}` : "")), document.createTextNode(m.text));
+    return b;
+  }));
+}
+$("#scrim").onclick = closeDrawer;
+document.addEventListener("keydown", ev => {
+  const d = $("#drawer"); if (d.hidden || $("#ask").open) return;
+  if (ev.key === "Escape") { ev.preventDefault(); closeDrawer(); return; }
+  if (ev.key !== "Tab") return;  // keep focus inside the drawer while it's open
+  const f = [...d.querySelectorAll("button:not([disabled]),[href],[tabindex]:not([tabindex='-1'])")].filter(n => n.offsetParent);
+  if (!f.length) return;
+  if (!d.contains(document.activeElement)) { ev.preventDefault(); f[0].focus(); }
+  else if (ev.shiftKey && document.activeElement === f[0]) { ev.preventDefault(); f[f.length - 1].focus(); }
+  else if (!ev.shiftKey && document.activeElement === f[f.length - 1]) { ev.preventDefault(); f[0].focus(); }
+});
 
 /* ---------- boot ---------- */
 async function load() {
