@@ -412,6 +412,17 @@ body.palopen{overflow:hidden}
   .pfoot span:last-child{display:none}
 }
 
+/* ---------- insights ---------- */
+.insights h2{font-size:30px}
+.charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+.charts>*{min-width:0}
+.chart{border:3px solid var(--ink);border-radius:16px;background:#fff;padding:10px 12px 12px;margin:0}
+.chart figcaption{font-weight:800;font-size:14px;line-height:1.3;margin:0 0 6px}
+.chart figcaption span{display:block;min-height:1.3em;font-size:13px;font-weight:600;color:var(--ink-2)}
+.chart .cv{position:relative;height:170px;width:100%}
+.chart canvas{display:block;max-width:100%}
+@media (max-width:600px){.charts{grid-template-columns:minmax(0,1fr)}}
+
 @media (max-width:900px){
   .hero,.two{grid-template-columns:1fr}
   .conf{grid-template-columns:1fr}.conf .vs{height:30px}
@@ -491,11 +502,25 @@ body.palopen{overflow:hidden}
 
   <section class="sec">
     <div class="two">
-      <div class="box" id="learnbox">
-        <h2 style="font-size:30px">It learns from you</h2>
-        <p class="sub" style="margin-bottom:14px">Reject a bad catch or correct a verdict, and the rule is used from then on.</p>
-        <div class="dials" id="dials"></div>
-        <div id="rules"></div>
+      <div style="display:grid;gap:24px;min-width:0">
+        <div class="box" id="learnbox">
+          <h2 style="font-size:30px">It learns from you</h2>
+          <p class="sub" style="margin-bottom:14px">Reject a bad catch or correct a verdict, and the rule is used from then on.</p>
+          <div class="dials" id="dials"></div>
+          <div id="rules"></div>
+        </div>
+        <div class="box insights" id="insightsbox" hidden>
+          <h2>Insights</h2>
+          <p class="sub">Where your decisions come from, and when you made them. Rejected catches aren't counted.</p>
+          <div class="charts">
+            <figure class="chart"><figcaption>By source <span id="srctotal"></span></figcaption>
+              <div class="cv"><canvas id="chartsrc" role="img" aria-label="Doughnut chart of entries by source" aria-describedby="srcsay"></canvas></div>
+              <p class="sr" id="srcsay"></p></figure>
+            <figure class="chart"><figcaption>Decided, by month <span id="timespan"></span></figcaption>
+              <div class="cv"><canvas id="charttime" role="img" aria-label="Bar chart of entries by the month they were decided" aria-describedby="timesay"></canvas></div>
+              <p class="sr" id="timesay"></p></figure>
+          </div>
+        </div>
       </div>
       <div style="display:grid;gap:24px">
         <div class="box" id="importbox">
@@ -547,6 +572,7 @@ body.palopen{overflow:hidden}
 </form></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js" crossorigin="anonymous"></script>
 <script>
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -1236,6 +1262,7 @@ const SECTIONS = [
   ["Watch an agent drift", "#replaysec", null, "replay terminal"],
   ["The wall", "#wallsec", null, "ledger decisions rewind"],
   ["It learns from you", "#learnbox", null, "rules corrections precision stats"],
+  ["Insights", "#insightsbox", null, "charts sources months stats"],
   ["Feed it your history", "#importbox", null, "import upload file export"],
   ["What every agent reads", "#agentsbox", null, "agents.md claude.md mcp sync"],
 ];
@@ -1259,7 +1286,7 @@ function commands() {
       run: () => { goTo("#replaysec"); replay(); }},
     // head: what the command is called, without the example text, so a search for "postgres" puts the decision first.
     ...EXAMPLES.map(t => ({group: "Check", label: `Check: ${t}`, head: "check example plan", run: () => checkText(t)})),
-    ...SECTIONS.map(([label, sel, f, keys]) => ({group: "Go to", label, keys, run: () => goTo(sel, f)})),
+    ...SECTIONS.filter(([, sel]) => !$(sel)?.hidden).map(([label, sel, f, keys]) => ({group: "Go to", label, keys, run: () => goTo(sel, f)})),
     {group: "Action", label: soundOn ? "Turn sound off" : "Turn sound on", keys: "audio mute toggle", run: () => $("#sound").click()},
   ].map(c => ({...c, hay: `${c.group} ${c.label} ${c.keys || ""}`.toLowerCase(), head: c.head || `${c.group} ${c.label} ${c.keys || ""}`.toLowerCase()}));
 }
@@ -1357,10 +1384,63 @@ addEventListener("keydown", ev => {
   }
 }, true);
 
+/* ---------- insights: two small charts drawn from the ledger ---------- */
+let charts = {};  // live Chart.js instances, destroyed before every redraw
+const SRCLABEL = {chatgpt: "ChatGPT", claude: "Claude", claude_code: "Claude Code", transcript: "Meeting", gemini: "Gemini", manual: "Sthira"};
+const SRCCOLOR = {chatgpt: "--jade", claude: "--saffron", claude_code: "--plum", transcript: "--sky", gemini: "--madder", manual: "--ink-2"};
+const nEntries = n => `${n} ${n === 1 ? "entry" : "entries"}`;
+function drawInsights() {
+  const box = $("#insightsbox");
+  Object.values(charts).forEach(c => c.destroy()); charts = {};
+  const live = entries.filter(e => e.status !== "rejected");
+  if (!window.Chart || !live.length) { box.hidden = true; return; }  // no Chart.js (offline, blocked) or nothing to show
+  box.hidden = false;
+  // Colours and fonts come from the page's own variables, read at draw time.
+  const css = getComputedStyle(document.documentElement), v = k => css.getPropertyValue(k).trim();
+  const ink = v("--ink"), ink2 = v("--ink-2"), line = v("--line");
+  Chart.defaults.font.family = v("--display"); Chart.defaults.font.weight = 600; Chart.defaults.color = ink2;
+  const animation = reduced ? false : {duration: 600};
+  const tooltip = {backgroundColor: ink, titleColor: v("--chalk"), bodyColor: v("--chalk"), cornerRadius: 8, padding: 8, displayColors: false};
+
+  const bySrc = {};
+  live.forEach(e => { const t = e.source?.type || "manual"; bySrc[t] = (bySrc[t] || 0) + 1; });
+  const types = Object.keys(bySrc).sort((a, b) => bySrc[b] - bySrc[a]), label = t => SRCLABEL[t] || t;
+  $("#srctotal").textContent = nEntries(live.length);
+  $("#srcsay").textContent = `${nEntries(live.length)}: ${types.map(t => `${bySrc[t]} ${label(t)}`).join(", ")}.`;
+
+  const byMonth = {};
+  live.forEach(e => { if (e.decided_at) { const k = String(e.decided_at).slice(0, 7); byMonth[k] = (byMonth[k] || 0) + 1; } });
+  const months = Object.keys(byMonth).sort();
+  const mlabel = m => new Date(m + "-01T00:00:00Z").toLocaleDateString("en-GB", {month: "short", year: "2-digit", timeZone: "UTC"});
+  $("#timespan").textContent = months.length > 1 ? `${mlabel(months[0])} to ${mlabel(months.at(-1))}` : months.length ? mlabel(months[0]) : "";
+  $("#timesay").textContent = months.length ? `By month: ${months.map(m => `${mlabel(m)}, ${byMonth[m]}`).join("; ")}.` : "No dates yet.";
+
+  try {
+    charts.src = new Chart($("#chartsrc"), {
+      type: "doughnut",
+      data: {labels: types.map(label), datasets: [{data: types.map(t => bySrc[t]), backgroundColor: types.map(t => v(SRCCOLOR[t] || "--line")),
+        borderColor: ink, borderWidth: 2, hoverOffset: 6}]},
+      options: {maintainAspectRatio: false, cutout: "58%", animation, layout: {padding: 6},
+        plugins: {legend: {position: "right", labels: {boxWidth: 12, boxHeight: 12, color: ink, font: {size: 12, weight: 700}}}, tooltip}},
+    });
+    charts.time = new Chart($("#charttime"), {
+      type: "bar",
+      data: {labels: months.map(mlabel), datasets: [{data: months.map(m => byMonth[m]), backgroundColor: v("--saffron"), hoverBackgroundColor: v("--jade"),
+        borderColor: ink, borderWidth: 2, borderSkipped: false, borderRadius: 6, maxBarThickness: 28}]},
+      options: {maintainAspectRatio: false, animation, plugins: {legend: {display: false}, tooltip},
+        scales: {x: {grid: {display: false}, border: {color: ink, width: 2}, ticks: {color: ink2}},
+                 y: {beginAtZero: true, border: {display: false}, ticks: {precision: 0, color: ink2}, grid: {color: line}}}},
+    });
+  } catch (er) {
+    // The charts are a nicety: if anything goes wrong, hide the card rather than break the page.
+    Object.values(charts).forEach(c => c.destroy()); charts = {}; box.hidden = true;
+  }
+}
+
 /* ---------- boot ---------- */
 async function load() {
   entries = await j("/api/entries");
-  renderWall(); loadStats(); loadRules(); loadActivity();
+  renderWall(); loadStats(); loadRules(); loadActivity(); drawInsights();
   if (!checking && !$("#arena").children.length) renderIdle();
   $("#agents").textContent = (await j("/api/agents-md").catch(() => ({markdown: ""}))).markdown;
 }
