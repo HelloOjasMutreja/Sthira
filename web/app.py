@@ -11,7 +11,7 @@ import threading
 import time
 from pathlib import Path
 
-from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, Response, StreamingResponse
 from pydantic import BaseModel
 
@@ -102,7 +102,7 @@ def entries(status: str | None = None, kind: str | None = None, q: str | None = 
 
 
 @app.get("/api/entries/{entry_id}/context")
-def entry_context(entry_id: str, around: int = Query(2, ge=0, le=5)):
+def entry_context(entry_id: str, around: str = "2"):
     """The source conversation around an entry's quote, so a decision can be read where it was made."""
     c = con()
     e = store.get_entry(c, entry_id)
@@ -114,6 +114,10 @@ def entry_context(entry_id: str, around: int = Query(2, ge=0, le=5)):
     idx = next((i for i, r in enumerate(rows) if r["msg_id"] == msg_id), None)
     if idx is None:
         return {"title": e.source.title, "messages": []}
+    try:  # documented as clamped to 0..5; a non-number falls back to the default instead of a 422
+        around = max(0, min(int(around), 5))
+    except ValueError:
+        around = 2
     window = rows[max(0, idx - around): idx + around + 1]
     return {"title": e.source.title, "messages": [
         {"role": r["role"], "ts": r["ts"], "text": (r["text"] or "")[:1500], "match": r["msg_id"] == msg_id}
