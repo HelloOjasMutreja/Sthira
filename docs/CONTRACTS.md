@@ -60,7 +60,7 @@ api.sync(path: str = "AGENTS.md") -> str                        # returns the wr
 |---|---|---|---|
 | GET | `/api/entries` | `status, kind, q` | `Entry[]` |
 | POST | `/api/entries/{id}/review` | `{action, note}` | `Entry` |
-| POST | `/api/check` | `{text}` | `Verdict` |
+| POST | `/api/check` | `{text}` | `Verdict`, plus `"cached": true` when an identical check against the same settled ledger and feedback ran in the last 10 minutes (fallback verdicts are never cached) |
 | POST | `/api/ingest` | multipart file + `kind` | `{messages, sources}` |
 | POST | `/api/extract` | `{limit}` | `Entry[]` |
 | GET | `/api/stats` | none | feedback stats + counts |
