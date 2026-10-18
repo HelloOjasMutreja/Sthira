@@ -97,6 +97,18 @@ textarea::placeholder{color:#8a90b8}
 .cleared{display:grid;gap:12px;justify-items:start}
 .cleared .said{width:100%}
 .offline{border:3px dashed var(--ink);border-radius:16px;padding:16px;background:#fff7e0}
+/* before → after, shown when a re-check follows a correction */
+.cmp{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:stretch;margin:0 0 18px}
+.cmp .side{border:3px solid var(--ink);border-radius:14px;padding:8px 12px;box-shadow:3px 3px 0 var(--ink);min-width:0}
+.cmp .side.bad{background:var(--madder-soft)} .cmp .side.ok{background:var(--jade-soft)}
+.cmp .side .who{margin:0 0 2px;font-size:12px}
+.cmp .side b{display:block;font-size:17px;line-height:1.25;letter-spacing:-.01em;overflow-wrap:anywhere}
+.cmp .side.bad b{color:#c4183a} .cmp .side.ok b{color:#0d7d66}
+.cmp .arr{align-self:center;display:grid;place-items:center;width:34px;height:34px;border:3px solid var(--ink);border-radius:50%;background:var(--paper);font-weight:800;font-size:18px;line-height:1}
+.cmp .note{grid-column:1/-1;margin:2px 2px 0;border:2px dashed var(--ink);border-radius:12px;padding:8px 12px;background:#fff7e0;font-size:14px;font-weight:700}
+.vbody{position:relative}
+@media (prefers-reduced-motion:no-preference){.cmp{animation:rise .4s both}}
+@media (max-width:600px){.cmp{grid-template-columns:1fr;gap:6px}.cmp .arr{justify-self:center;transform:rotate(90deg)}}
 
 /* ---------- section scaffolding ---------- */
 .sec{margin:44px 0 0}
@@ -531,7 +543,8 @@ async function typeInto(el, text) {
 }
 
 let checking = false;
-async function runCheck() {
+// prev: the verdict being corrected. When set, this is a re-check and the result is shown as before → after.
+async function runCheck(prev = null) {
   const text = $("#text").value.trim(); if (!text || checking) return;
   checking = true; $("#go").disabled = true;
   const arena = $("#arena");
@@ -544,6 +557,27 @@ async function runCheck() {
   checking = false; $("#go").disabled = false;
   if (err) return renderOffline(err, text);
   v.verdict === "contradicts" ? renderOverruled(v, text) : renderCleared(v);
+  if (prev) renderCompare(prev, v);
+}
+
+const verdictLabel = v => v.verdict === "contradicts" ? `OVERRULED (${v.conflicts.length} decision${v.conflicts.length === 1 ? "" : "s"})`
+  : v.verdict === "unrelated" ? "cleared: nothing related" : "cleared: consistent";
+function renderCompare(prev, v) {
+  // Same verdict means the same conflicting decisions, not just the same label.
+  const ids = x => (x.conflicts || []).map(c => c.entry.id).sort().join(",");
+  const same = prev.verdict === v.verdict && ids(prev) === ids(v);
+  const side = (lab, x) => `<div class="side ${x.verdict === "contradicts" ? "bad" : "ok"}"><p class="who">${lab}</p><b>${esc(verdictLabel(x))}</b></div>`;
+  const note = !same ? ""
+    : v.fallback ? "Same verdict: the model is offline, so this is a recorded result and your rule couldn't be applied. Try again when the model is back."
+    : v.verdict === "contradicts" ? "Same verdict: the model still sees a conflict. Try a more specific note."
+    : "Same verdict as before your correction.";
+  const cmp = document.createElement("div");
+  cmp.className = "cmp"; cmp.setAttribute("role", "group"); cmp.setAttribute("aria-label", "Verdict before and after your correction");
+  cmp.innerHTML = side("Before your correction", prev) + `<span class="arr" aria-hidden="true">→</span>`
+    + side(same ? "After your correction" : "After: it learned", v) + (note ? `<p class="note">${esc(note)}</p>` : "");
+  // The stamp is positioned against its container, so move the verdict into its own box below the comparison.
+  const arena = $("#arena"), body = document.createElement("div");
+  body.className = "vbody"; body.append(...arena.childNodes); arena.replaceChildren(cmp, body);
 }
 
 function renderOffline(err, text) {
@@ -583,7 +617,14 @@ async function renderOverruled(v, text) {
   $("#teach").onclick = async () => {
     const note = await ask("What should Sthira learn?", "State it as a rule. It is applied to every later check.", "e.g. A cache in front of a database doesn't change which database we use", "Teach it");
     if (!note) return;
-    try { await post("/api/correct", {text, note}); toast("Learned. Future checks will use that rule.", "good"); loadStats(); loadRules(); } catch (er) { toast(er.message, "bad"); }
+    try { await post("/api/correct", {text, note}); } catch (er) { return toast(er.message, "bad"); }
+    toast("Learned. Future checks will use that rule.", "good"); blip("ok"); loadStats(); loadRules();
+    // The verdict cache is keyed on the feedback count, so this re-check really asks the model again.
+    const row = $("#arena .row");
+    row.innerHTML = `<button class="btn go small" id="recheck">Re-check with what it learned</button>`;
+    row.insertAdjacentHTML("afterend", `<p class="fine">Rule saved: “${esc(note)}”</p>`);
+    $("#recheck").onclick = () => { $("#text").value = text; runCheck(v); };
+    $("#recheck").focus();
   };
 }
 function renderCleared(v) {
