@@ -235,6 +235,29 @@ dialog .row{justify-content:flex-end}
   .dials{grid-template-columns:1fr 1fr 1fr}
   .stamp{font-size:28px;top:56px}
 }
+
+/* ---------- talk to your ledger ---------- */
+.talk-fab{position:fixed;right:20px;bottom:20px;z-index:40;display:flex;align-items:center;gap:9px;background:var(--saffron);border:2px solid var(--ink);border-radius:999px;padding:12px 20px;font-weight:800;box-shadow:var(--shadow)}
+.talk-fab:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+.talk{position:fixed;right:20px;bottom:84px;z-index:41;width:min(430px,calc(100vw - 40px));max-height:min(620px,calc(100vh - 110px));display:flex;flex-direction:column;background:var(--paper);border:2px solid var(--ink);border-radius:18px;box-shadow:var(--shadow-lg)}
+.talk[hidden]{display:none}
+.talk-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border-bottom:2px solid var(--ink)}
+.talk-head b{font-size:17px}.talk-head select{border:2px solid var(--ink);border-radius:8px;background:var(--paper);padding:3px 6px;font:inherit;font-size:14px}
+.talk-log{overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:150px}
+.msg{max-width:92%;padding:9px 13px;border:2px solid var(--ink);border-radius:14px;font-size:15px}
+.msg.me{align-self:flex-end;background:var(--saffron-soft)}
+.msg.it{align-self:flex-start;background:var(--chalk)}
+.msg .en{display:block;font-size:12px;color:var(--ink-2);margin-top:4px}
+.cite{display:block;margin-top:7px;padding:6px 9px;border-left:4px solid var(--jade);background:var(--jade-soft);border-radius:4px;font-size:13px}
+.cite.old{border-color:var(--madder);background:var(--madder-soft)}
+.cite q{font-family:var(--inscribe);font-style:italic}
+.talk-bar{display:flex;gap:8px;padding:12px;border-top:2px solid var(--ink);align-items:center}
+.talk-bar input{flex:1;min-width:0;border:2px solid var(--ink);border-radius:10px;padding:9px 11px;font:inherit;background:#fff}
+.mic{width:46px;height:46px;border-radius:50%;border:2px solid var(--ink);background:var(--jade);font-size:20px;box-shadow:var(--shadow);flex:none}
+.mic.rec{background:var(--madder);animation:pulse 1s infinite}
+@keyframes pulse{50%{transform:scale(1.1)}}
+@media (prefers-reduced-motion:reduce){.mic.rec{animation:none}}
+.talk-hint{padding:0 14px 10px;font-size:12px;color:var(--ink-2)}
 </style>
 </head>
 <body>
@@ -328,6 +351,17 @@ dialog .row{justify-content:flex-end}
   <footer>Built at Hacktoberfest Hack Day Bengaluru 2026 for Track 2, O2: adaptive AI with memory and self-correction. It runs on Qwen3 through Ollama on your own machine. This page may be using a hosted open-weight model instead, and says which one at the top. <a href="https://github.com/HelloOjasMutreja/Sthira">Source on GitHub</a>.</footer>
 </div>
 
+<button class="talk-fab" id="talkfab" aria-expanded="false" aria-controls="talk">&#127908; Talk to Sthira</button>
+<section class="talk" id="talk" hidden aria-label="Talk to your ledger">
+  <div class="talk-head"><b>Ask your ledger</b><select id="tlang" aria-label="Language"></select></div>
+  <div class="talk-log" id="tlog" aria-live="polite"></div>
+  <div class="talk-hint" id="thint">Try: &ldquo;Why did we pick Postgres?&rdquo; or &ldquo;We decided to use MongoDB.&rdquo;</div>
+  <form class="talk-bar" id="tform">
+    <button type="button" class="mic" id="mic" aria-label="Hold to speak" title="Click to start, click again to send">&#127908;</button>
+    <input id="tin" placeholder="Type or speak a question" autocomplete="off" aria-label="Question">
+    <button class="btn go" type="submit">Ask</button>
+  </form>
+</section>
 <div class="toasts" id="toasts"></div>
 <dialog id="ask"><form method="dialog">
   <h3 id="askt"></h3><p id="asks"></p><textarea id="askv"></textarea>
@@ -670,6 +704,69 @@ const dz = $("#drop");
 ["dragenter", "dragover"].forEach(t => dz.addEventListener(t, e => { e.preventDefault(); dz.classList.add("over"); }));
 ["dragleave", "drop"].forEach(t => dz.addEventListener(t, e => { e.preventDefault(); dz.classList.remove("over"); }));
 dz.addEventListener("drop", e => upload(e.dataTransfer.files[0]));
+
+/* ---------- talk to your ledger (Sarvam voice) ---------- */
+let voiceOn = false, rec = null, recChunks = [], tAudio = null;
+const tlog = $("#tlog");
+function say(cls, html) { const d = document.createElement("div"); d.className = "msg " + cls; d.innerHTML = html; tlog.append(d); tlog.scrollTop = tlog.scrollHeight; return d; }
+function citeHtml(c) { return `<span class="cite ${c.status === "superseded" ? "old" : ""}"><b>${esc(c.title)}</b> (${esc(c.status)}${c.decided_at ? ", " + day(c.decided_at) : ""}) <q>${esc(c.quote)}</q> &mdash; ${esc(c.source)}</span>`; }
+async function speak(text, lang) {
+  if (!voiceOn || !text) return;
+  try {
+    const r = await fetch("/api/voice/tts", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({text, lang})});
+    if (!r.ok) return;
+    if (tAudio) tAudio.pause();
+    tAudio = new Audio(URL.createObjectURL(await r.blob())); tAudio.play().catch(() => {});
+  } catch (e) {}
+}
+async function askLedger(text, lang) {
+  if (!text.trim()) return;
+  say("me", esc(text));
+  const wait = say("it", "<i>Thinking&hellip;</i>");
+  try {
+    const d = await j("/api/ask", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({text, lang})});
+    const en = d.lang !== "en-IN" ? `<span class="en">${esc(d.answer_en)}</span>` : "";
+    wait.innerHTML = esc(d.answer) + en + (d.citations || []).map(citeHtml).join("") + (d.grounded || d.recorded ? "" : `<span class="en">Not found in your ledger.</span>`);
+    if (d.recorded) load();
+    speak(d.answer, d.lang);
+  } catch (e) { wait.textContent = e.message; }
+}
+$("#tform").onsubmit = e => { e.preventDefault(); const t = $("#tin").value; $("#tin").value = ""; askLedger(t, $("#tlang").value); };
+$("#talkfab").onclick = () => {
+  const p = $("#talk"); p.hidden = !p.hidden; $("#talkfab").setAttribute("aria-expanded", String(!p.hidden));
+  if (!p.hidden && !tlog.children.length) say("it", "Ask me what you decided, or tell me a decision and I will check it against the ledger." + (voiceOn ? " You can speak in your own language." : ""));
+  if (!p.hidden) $("#tin").focus();
+};
+$("#mic").onclick = async () => {
+  if (!voiceOn) { say("it", "Voice needs a Sarvam key on this server. Typing works."); return; }
+  const m = $("#mic");
+  if (rec) { rec.stop(); return; }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({audio: true});
+    rec = new MediaRecorder(stream); recChunks = [];
+    rec.ondataavailable = e => recChunks.push(e.data);
+    rec.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop()); m.classList.remove("rec");
+      const blob = new Blob(recChunks, {type: rec.mimeType || "audio/webm"}); rec = null;
+      const fd = new FormData(); fd.append("audio", blob, "speech.webm");
+      const w = say("me", "<i>Listening&hellip;</i>");
+      try {
+        const r = await fetch("/api/voice/stt", {method: "POST", body: fd});
+        if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || r.statusText);
+        const d = await r.json(); w.remove();
+        if (!d.transcript) { say("it", "I didn't catch that. Try again."); return; }
+        const lang = d.language_code in (window.LANGS || {}) ? d.language_code : $("#tlang").value;
+        $("#tlang").value = lang; askLedger(d.transcript, lang);
+      } catch (e) { w.remove(); say("it", esc(e.message)); }
+    };
+    rec.start(); m.classList.add("rec");
+  } catch (e) { say("it", "I need microphone permission to listen."); }
+};
+j("/api/meta").then(m => {
+  voiceOn = !!m.voice; window.LANGS = m.languages || {};
+  $("#tlang").innerHTML = Object.entries(window.LANGS).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join("") || `<option value="en-IN">English</option>`;
+  if (!voiceOn) $("#thint").textContent = "Typing works everywhere. Voice and Indian languages need a Sarvam key (SARVAM_API_KEY).";
+}).catch(() => {});
 
 /* ---------- boot ---------- */
 async function load() {
