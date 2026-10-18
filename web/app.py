@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import os
 import queue
@@ -121,8 +122,13 @@ def check(body: CheckBody):
     if not body.text.strip():
         raise HTTPException(400, "text is empty")
     text = body.text[:4000]
+    c = con()
+    key = (fallback.normalize(text), _ledger_fingerprint(c))
+    hit = _verdict_cache.get(key)
+    if hit and time.monotonic() - hit[0] < VERDICT_TTL:
+        return {**copy.deepcopy(hit[1]), "cached": True}
     try:
-        return api.check(text, con=con()).model_dump()
+        v = api.check(text, con=c).model_dump()
     except Exception as e:
         # If the hosted model is unreachable: the built-in examples fall back to verdicts recorded from a
         # real local Qwen3 run, and other text to a keyword match on explicitly rejected alternatives.
@@ -135,6 +141,26 @@ def check(body: CheckBody):
         if v:
             return {**v.model_dump(), "fallback": "keyword"}
         raise HTTPException(502, f"Model call failed: {e}")
+    # Only real model verdicts are cached; the fallbacks above return before reaching here.
+    _verdict_cache.pop(key, None)
+    if len(_verdict_cache) >= VERDICT_CACHE_MAX:
+        _verdict_cache.pop(next(iter(_verdict_cache)))
+    _verdict_cache[key] = (time.monotonic(), copy.deepcopy(v))
+    return v
+
+
+# Repeated checks of the same text (e.g. judges clicking the same example) reuse the model's verdict instead of
+# spending the hosted model's small per-minute quota. The key includes a fingerprint of the settled ledger and of
+# the feedback, so a correction or a new or changed decision makes the next check ask the model again.
+VERDICT_TTL = 600
+VERDICT_CACHE_MAX = 256
+_verdict_cache: dict[tuple, tuple[float, dict]] = {}
+
+
+def _ledger_fingerprint(c) -> tuple:
+    settled = c.execute("SELECT COUNT(*), MAX(recorded_at) FROM entries WHERE status = 'settled'").fetchone()
+    feedback = c.execute("SELECT COUNT(*) FROM feedback").fetchone()
+    return (settled[0], settled[1], feedback[0])
 
 
 def _cached_checks() -> dict:

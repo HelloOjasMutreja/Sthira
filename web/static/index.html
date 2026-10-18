@@ -444,7 +444,7 @@ function renderOffline(err, text) {
 function fineNote(v) {
   return v.fallback === "keyword" ? "The model is offline, so this is a keyword match on alternatives you rejected. It is not a model verdict."
        : v.fallback === "recorded" ? "Recorded from a real local Qwen3 run. The hosted model is offline."
-       : `Flagged by ${esc(v.model)}, then double-checked by a second pass.`;
+       : `Flagged by ${esc(v.model)}${v.cached ? " · cached" : ""}, then double-checked by a second pass.`;
 }
 async function renderOverruled(v, text) {
   const c = v.conflicts[0], e = c.entry, arena = $("#arena");
@@ -480,7 +480,7 @@ function renderCleared(v) {
   $("#arena").innerHTML = `<div class="stamp ok">CLEARED</div><div class="cleared">
     <h3 style="margin:56px 0 0;font-size:24px;letter-spacing:-.02em">${unrelated ? "Nothing you've settled covers this." : "This follows what you've settled."}</h3>
     <p style="margin:0;color:var(--ink-2)">${unrelated ? "No related decisions, so go ahead." : "The plan agrees with every related decision."}</p>
-    <p class="fine">Checked by ${esc(v.model)}</p></div>`;
+    <p class="fine">Checked by ${esc(v.model)}${v.cached ? " · cached" : ""}</p></div>`;
   $("#arena").classList.remove("hit"); blip("ok");
 }
 
