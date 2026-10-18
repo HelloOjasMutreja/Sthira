@@ -371,6 +371,54 @@ def agents_md():
     return {"markdown": sync.render(con())}
 
 
+EXPORT_STATUSES = ("settled", "proposed", "superseded", "rejected")
+
+
+@app.get("/api/export")
+def export(format: str = "json"):
+    """Download the whole ledger as a file, superseded and rejected entries included."""
+    if format not in ("json", "md"):
+        raise HTTPException(400, "format must be json or md")
+    entries = [e.model_dump() for e in api.list_entries(con=con())]
+    if format == "json":
+        return Response(json.dumps({"format": "sthira-ledger/1", "entries": entries}, indent=2, ensure_ascii=False),
+                        media_type="application/json",
+                        headers={"Content-Disposition": 'attachment; filename="sthira-ledger.json"'})
+    return Response(_ledger_markdown(entries), media_type="text/markdown; charset=utf-8",
+                    headers={"Content-Disposition": 'attachment; filename="sthira-ledger.md"'})
+
+
+def _ledger_markdown(entries: list[dict]) -> str:
+    def one_line(s: str) -> str:
+        return " ".join((s or "").split())
+
+    lines = ["# Sthira ledger", "",
+             f"{len(entries)} entries. Nothing is deleted: superseded and rejected ones are kept.", ""]
+    for status in EXPORT_STATUSES:
+        group = [e for e in entries if e["status"] == status]
+        if not group:
+            continue
+        lines += [f"## {status.capitalize()} ({len(group)})", ""]
+        for e in group:
+            lines += [f"### {one_line(e['title']) or one_line(e['statement'])[:80]}", ""]
+            lines.append(f"- **Kind:** {e['kind'].replace('_', ' ')}")
+            lines.append(f"- **Statement:** {one_line(e['statement'])}")
+            if e["rationale"]:
+                lines.append(f"- **Why:** {one_line(e['rationale'])}")
+            if e["alternatives_rejected"]:
+                lines.append(f"- **Rejected alternatives:** {'; '.join(one_line(a) for a in e['alternatives_rejected'])}")
+            if e["superseded_by"]:
+                lines.append(f"- **Superseded by:** {e['superseded_by']}")
+            src = e["source"]
+            where = ", ".join(x for x in (src["type"], (e["decided_at"] or "")[:10], src["locator"]) if x)
+            lines.append(f"- **Source:** {one_line(src['title']) or 'untitled'}" + (f" ({where})" if where else ""))
+            if src["quote"]:
+                lines.append("")
+                lines += [f"> {ln}" if ln.strip() else ">" for ln in src["quote"].splitlines()]
+            lines.append("")
+    return "\n".join(lines)
+
+
 # ---- voice talkback (Sarvam): speak, ask your ledger, hear the answer --------------------------------------------
 _voice_hits: dict[str, list[float]] = {}
 

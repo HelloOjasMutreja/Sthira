@@ -198,6 +198,22 @@ input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:9px;bac
 }
 @media (max-width:900px){.reader{grid-template-columns:1fr}.paper{height:86px}.paper i:nth-child(n+6){display:none}}
 pre{margin:0;background:var(--ink);color:#e6ebf6;border-radius:14px;padding:14px 16px;overflow:auto;font:13px/1.55 ui-monospace,Consolas,monospace;max-height:330px;white-space:pre-wrap}
+/* ---------- use it today: install tabs + ledger export ---------- */
+.use{margin-top:22px;padding-top:18px;border-top:3px dashed var(--line)}
+.use h3{margin:0;font-size:21px;letter-spacing:-.01em}
+.itabs{margin:12px 0 12px;gap:6px}
+.itab{font-size:13px;padding:5px 12px}
+.itab[aria-selected=true]{background:var(--saffron);box-shadow:3px 3px 0 var(--ink);transform:translate(-1px,-1px)}
+.itab:hover{background:var(--saffron-soft)} .itab[aria-selected=true]:hover{background:var(--saffron)}
+.ipanel{border:3px solid var(--ink);border-radius:16px;background:#fff;padding:12px;box-shadow:3px 3px 0 var(--ink)}
+.ihead{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;margin:0 0 10px}
+.ihead p{margin:0;font-size:14px;color:var(--ink-2);min-width:0}
+.ihead .btn{flex:none}
+.ipanel pre{max-height:none;overflow-wrap:anywhere;font-size:12.5px}
+.iexport{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:16px}
+.iexport .meta{flex-basis:100%}
+a.btn{text-decoration:none;display:inline-block}
+@media (max-width:600px){.ihead{flex-direction:column}.ipanel{padding:10px}.ipanel pre{padding:12px}}
 footer{margin-top:50px;padding-top:20px;border-top:3px solid var(--ink);color:var(--ink-2);font-size:14px;max-width:88ch}
 
 /* ---------- toast + dialog ---------- */
@@ -616,8 +632,22 @@ body.palopen{overflow:hidden}
         </div>
         <div class="box" id="agentsbox">
           <h2 style="font-size:30px">What every agent reads</h2>
-          <p class="sub" style="margin-bottom:12px"><code>sthira sync</code> writes this into <code>AGENTS.md</code> and <code>CLAUDE.md</code>. Over MCP, agents call <code>check</code> before they act.</p>
+          <p class="sub" style="margin-bottom:12px"><code>sthira sync</code> writes this into <code>AGENTS.md</code>, <code>CLAUDE.md</code> or a Cursor rule. Over MCP, agents call <code>check</code> before they act.</p>
           <pre id="agents">…</pre>
+          <div class="use" id="installbox">
+            <h3>Use it today</h3>
+            <p class="sub">Every command below is the real one from the README. Swap in your own paths.</p>
+            <div class="tabs itabs" id="itabs" role="tablist" aria-label="Ways to use Sthira"></div>
+            <div class="ipanel" id="ipanel" role="tabpanel" tabindex="0">
+              <div class="ihead"><p id="inote"></p><button class="btn small" id="icopy" type="button">Copy</button></div>
+              <pre id="icode"></pre>
+            </div>
+            <div class="iexport">
+              <span class="meta">Take the whole ledger with you, superseded and rejected entries included.</span>
+              <a class="btn small" id="exjson" href="/api/export?format=json" download="sthira-ledger.json">Ledger as JSON</a>
+              <a class="btn small" id="exmd" href="/api/export?format=md" download="sthira-ledger.md">Ledger as Markdown</a>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1367,6 +1397,7 @@ const SECTIONS = [
   ["Insights", "#insightsbox", null, "charts sources months stats"],
   ["Feed it your history", "#importbox", null, "import upload file export"],
   ["What every agent reads", "#agentsbox", null, "agents.md claude.md mcp sync"],
+  ["Use it today: install", "#installbox", "#itabs [aria-selected=true]", "install setup cli mcp hook cursor agents.md claude code uv copy"],
   ["Evidence", "#evidence", null, "eval evaluation proof numbers precision recall critic dogfood limits does it work"],
 ];
 function goTo(sel, focusSel) {
@@ -1390,6 +1421,10 @@ function commands() {
     // head: what the command is called, without the example text, so a search for "postgres" puts the decision first.
     ...EXAMPLES.map(t => ({group: "Check", label: `Check: ${t}`, head: "check example plan", run: () => checkText(t)})),
     ...SECTIONS.filter(([, sel]) => !$(sel)?.hidden).map(([label, sel, f, keys]) => ({group: "Go to", label, keys, run: () => goTo(sel, f)})),
+    {group: "Action", label: "Download the ledger as JSON", hint: "every entry, superseded and rejected included", keys: "export save backup file",
+      run: () => downloadLedger("json")},
+    {group: "Action", label: "Download the ledger as Markdown", hint: "grouped by status, with the source quotes", keys: "export save backup file md",
+      run: () => downloadLedger("md")},
     {group: "Action", label: soundOn ? "Turn sound off" : "Turn sound on", keys: "audio mute toggle", run: () => $("#sound").click()},
   ].map(c => ({...c, hay: `${c.group} ${c.label} ${c.keys || ""}`.toLowerCase(), head: c.head || `${c.group} ${c.label} ${c.keys || ""}`.toLowerCase()}));
 }
@@ -1588,6 +1623,79 @@ async function loadEvidence() {
   try { evidence = await j("/api/eval"); renderEvidence(evidence); }
   catch (er) { evidence = null; $("#evidence").hidden = true; }  // a nicety: without it the page still works
 }
+
+/* ---------- use it today: install tabs (commands copied from README.md) and ledger export ---------- */
+const INSTALLS = [
+  {id: "cli", label: "CLI", note: "Local-first: Qwen3 through Ollama on your machine, nothing leaves it.", code:
+`ollama pull qwen3:4b
+git clone https://github.com/HelloOjasMutreja/Sthira && cd Sthira
+uv sync
+
+# or conversations.json, ~/.claude/projects/<proj>/, meeting.md
+uv run sthira ingest path/to/chatgpt-export.zip
+# the local open-weight model proposes entries
+uv run sthira extract
+# settle or reject; rejections teach Sthira
+uv run sthira review
+uv run sthira check "Let's switch the user store to MongoDB"`},
+  {id: "mcp", label: "Claude Code · MCP", note: "The agent calls check before it acts, and propose when you decide something new.", code:
+`claude mcp add sthira -- uv run --directory /path/to/Sthira --extra mcp sthira mcp`},
+  {id: "hook", label: "Claude Code · hook", note: "A UserPromptSubmit hook in your Claude Code settings: warns you and the agent when a request contradicts a settled decision.", code:
+`{ "hooks": { "UserPromptSubmit": [ { "hooks": [ { "type": "command",
+  "command": "uv run --directory /path/to/Sthira sthira hook" } ] } ] } }`},
+  {id: "sync", label: "AGENTS.md · Cursor", note: "Writes the block above where every coding agent reads it. Run it again after you settle something.", code:
+`# or CLAUDE.md
+uv run sthira sync AGENTS.md
+# writes .cursor/rules/sthira.mdc
+uv run sthira sync --format cursor`},
+];
+let installSel = 0;
+const itabBtns = INSTALLS.map((it, i) => {
+  const b = mk("button", "tab itab", it.label);
+  b.type = "button"; b.id = "itab-" + it.id;
+  b.setAttribute("role", "tab"); b.setAttribute("aria-controls", "ipanel");
+  b.onclick = () => selectInstall(i);
+  return b;
+});
+$("#itabs").append(...itabBtns);
+function selectInstall(i, focus = false) {
+  installSel = (i + INSTALLS.length) % INSTALLS.length;
+  itabBtns.forEach((b, k) => { b.setAttribute("aria-selected", k === installSel); b.tabIndex = k === installSel ? 0 : -1; });
+  const it = INSTALLS[installSel];
+  $("#ipanel").setAttribute("aria-labelledby", "itab-" + it.id);
+  $("#inote").textContent = it.note;
+  $("#icode").textContent = it.code;
+  $("#icopy").setAttribute("aria-label", `Copy the ${it.label} commands`);
+  if (focus) itabBtns[installSel].focus();
+}
+$("#itabs").addEventListener("keydown", ev => {
+  const step = {ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1}[ev.key];
+  if (step) selectInstall(installSel + step, true);
+  else if (ev.key === "Home") selectInstall(0, true);
+  else if (ev.key === "End") selectInstall(INSTALLS.length - 1, true);
+  else return;
+  ev.preventDefault();
+});
+$("#icopy").onclick = async () => {
+  const it = INSTALLS[installSel], ok = await copyText(it.code);
+  toast(ok ? `Copied the ${it.label} commands.` : "Couldn't copy. Select the text in the box instead.", ok ? "good" : "bad");
+};
+selectInstall(0);
+
+const EXPORTS = {json: "sthira-ledger.json", md: "sthira-ledger.md"};
+async function downloadLedger(format) {
+  try {
+    const r = await fetch(`/api/export?format=${encodeURIComponent(format)}`);
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || r.statusText);
+    const url = URL.createObjectURL(await r.blob()), a = mk("a");
+    a.href = url; a.download = EXPORTS[format]; document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast(`Downloaded ${EXPORTS[format]}: the whole ledger, history included.`, "good");
+  } catch (er) { toast(`Couldn't export the ledger: ${er.message}`, "bad"); }
+}
+// The links still work without this script; with it, a failed export shows a toast instead of a broken file.
+$("#exjson").onclick = ev => { ev.preventDefault(); downloadLedger("json"); };
+$("#exmd").onclick = ev => { ev.preventDefault(); downloadLedger("md"); };
 
 /* ---------- talk to your ledger (Sarvam voice) ---------- */
 let voiceOn = false, rec = null, recChunks = [], tAudio = null;

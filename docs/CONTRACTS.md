@@ -66,6 +66,7 @@ api.sync(path: str = "AGENTS.md") -> str                        # returns the wr
 | POST | `/api/extract` | `{limit}` | `Entry[]` |
 | GET | `/api/stats` | none | feedback stats + counts |
 | GET | `/api/eval` | none | `{source, url, date, setup, extraction: {headline, what, rows: [{model, run, before, after, recall, caught, drifts, headline?}]}, checks: {model, cases, rows: [{pipeline, correct, total, latency, note, winner?}], critic}, dogfood: {what, messages, entries, model, right: [str], wrong: [str], bug}, limits: [str]}`: the offline evaluation's headline numbers, a static file (`web/eval_summary.json`) transcribed from `eval/README.md`. Not computed from the ledger; `/api/stats` is the live one |
+| GET | `/api/export` | `format`: `json` (default) or `md` | The whole ledger as a download (`Content-Disposition: attachment`), superseded and rejected entries included. `json`: `{"format": "sthira-ledger/1", "entries": Entry[]}` as `sthira-ledger.json`. `md`: `sthira-ledger.md`, grouped by status (settled, proposed, superseded, rejected), each entry with its title, kind, statement, why, rejected alternatives, superseded-by and source, and the verbatim quote as a blockquote. Any other `format` is a 400 |
 | GET | `/api/demo-session` | none | `{title, messages: [{role, text}]}`: the demo Claude Code session (`demo/claude_code/session.jsonl`) parsed with `sthira.ingest.claude_code.parse`, for the in-browser agent replay; empty `messages` if the file is missing |
 
 ## Environment
