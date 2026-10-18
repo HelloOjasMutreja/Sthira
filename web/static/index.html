@@ -372,6 +372,46 @@ body.locked{overflow:hidden}
   @media (prefers-reduced-motion:no-preference){.drawer:not([hidden]){animation:sheetin .28s cubic-bezier(.2,.9,.3,1.1)}}
 }
 
+/* ---------- command palette (Ctrl/⌘+K): every action and decision, one keystroke away ---------- */
+.kbtn{cursor:pointer;box-shadow:3px 3px 0 var(--ink);transition:transform .08s,box-shadow .08s,background .15s}
+.kbtn:hover{background:var(--saffron-soft)}
+.kbtn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
+.kbtn svg{width:15px;height:15px;flex:none}
+kbd{font:700 12px/1.4 var(--display);border:2px solid var(--ink);border-bottom-width:3px;border-radius:6px;background:#fff;padding:0 6px;white-space:nowrap}
+body.palopen{overflow:hidden}
+.pscrim{position:fixed;inset:0;background:rgba(22,26,68,.55);z-index:60}
+.pal{position:fixed;top:12vh;left:50%;transform:translateX(-50%);width:min(640px,calc(100vw - 32px));max-height:min(560px,76vh);z-index:61;display:flex;flex-direction:column;background:var(--paper);border:3px solid var(--ink);border-radius:20px;box-shadow:var(--shadow-lg);overflow:hidden}
+.pal[hidden],.pscrim[hidden]{display:none}
+.pinput{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:3px solid var(--ink);background:var(--chalk)}
+.pinput svg{width:22px;height:22px;flex:none}
+.pinput input{flex:1;min-width:0;border:0;background:transparent;font:600 19px/1.3 var(--display);color:var(--ink);outline:none}
+.pinput input::placeholder{color:#8a90b8}
+.plist{list-style:none;margin:0;padding:8px;overflow-y:auto;overscroll-behavior:contain;display:grid;gap:4px;align-content:start;flex:1;min-height:0}
+.popt{display:grid;grid-template-columns:118px minmax(0,1fr);gap:12px;align-items:start;border:2px solid transparent;border-radius:12px;padding:8px 10px;cursor:pointer}
+.popt[aria-selected=true]{border-color:var(--ink);background:var(--saffron-soft);box-shadow:3px 3px 0 var(--ink)}
+.ptag{justify-self:start;max-width:100%;overflow:hidden;text-overflow:ellipsis;border:2px solid var(--ink);border-radius:8px;padding:0 8px;font-size:12px;font-weight:800;background:var(--saffron);white-space:nowrap;margin-top:1px}
+.ptag.action{background:var(--ink);color:var(--chalk)} .ptag.check{background:var(--madder)} .ptag.goto{background:#fff}
+.ptag.preference{background:var(--sky)} .ptag.commitment{background:var(--jade)} .ptag.lesson{background:var(--plum)}
+.ptag.open_question{background:var(--paper);border-style:dashed} .ptag.assumption{background:var(--madder-soft)}
+.pbody b{display:block;font-size:15px;line-height:1.3;overflow-wrap:anywhere}
+.pbody small{display:block;font-size:12px;font-weight:600;color:var(--ink-2);overflow-wrap:anywhere}
+.pnone{padding:18px;text-align:center;font:italic 17px/1.4 var(--inscribe);color:var(--ink-2)}
+.pfoot{display:flex;gap:14px;flex-wrap:wrap;margin:0;padding:9px 16px;border-top:3px dashed var(--line);font-size:12px;font-weight:700;color:var(--ink-2)}
+.pfoot span{display:inline-flex;gap:4px;align-items:center}
+.jumpto:focus{outline:none}
+@media (prefers-reduced-motion:no-preference){
+  .pal:not([hidden]){animation:palin .18s cubic-bezier(.2,.9,.3,1.2)}
+  .pscrim:not([hidden]){animation:fadein .15s}
+}
+@keyframes palin{from{transform:translateX(-50%) translateY(-12px) scale(.97);opacity:0}}
+@media (max-width:600px){
+  .kbtn kbd{display:none}
+  .pal{top:16px;max-height:calc(100vh - 32px)}
+  .pinput{padding:12px 14px;gap:10px}.pinput input{font-size:17px}
+  .popt{grid-template-columns:minmax(0,1fr);gap:4px}
+  .pfoot span:last-child{display:none}
+}
+
 @media (max-width:900px){
   .hero,.two{grid-template-columns:1fr}
   .conf{grid-template-columns:1fr}.conf .vs{height:30px}
@@ -389,6 +429,7 @@ body.locked{overflow:hidden}
       <span class="latin" aria-label="Sthira"><span>S</span><span>t</span><span>h</span><span>i</span><span>r</span><span>a</span></span>
     </div>
     <div class="pills">
+      <button class="pill kbtn" id="palbtn" type="button" aria-label="Open the command palette" aria-haspopup="dialog" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.6-4.6"/></svg><kbd>Ctrl K</kbd></button>
       <span class="pill"><i></i><span id="model">connecting</span></span>
       <span class="pill">open-weight · MIT</span>
       <span class="pill"><button id="sound" aria-pressed="false" title="Toggle sound effects">Sound off</button></span>
@@ -434,7 +475,7 @@ body.locked{overflow:hidden}
     <p class="sr" id="replaysay" aria-live="polite"></p>
   </section>
 
-  <section class="sec">
+  <section class="sec" id="wallsec">
     <div class="sechead" id="wallhead">
       <div><h2>The wall</h2><p class="sub">Every decision you've settled, with its reason and the exact words you said. Nothing is ever deleted.</p></div>
       <div class="tabs" id="tabs"></div>
@@ -490,6 +531,15 @@ body.locked{overflow:hidden}
   <div class="dhead" id="dhead"></div>
   <div class="dbody" id="dbody"></div>
 </aside>
+<div class="pscrim" id="pscrim" hidden></div>
+<div class="pal" id="pal" role="dialog" aria-modal="true" aria-label="Command palette" hidden>
+  <div class="pinput">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.6-4.6"/></svg>
+    <input id="palq" type="text" role="combobox" aria-expanded="true" aria-controls="pallist" aria-autocomplete="list" aria-label="Search commands and decisions" autocomplete="off" spellcheck="false" placeholder="Search commands and decisions">
+  </div>
+  <ul class="plist" id="pallist" role="listbox" aria-label="Commands and decisions"></ul>
+  <p class="pfoot" aria-hidden="true"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>Enter</kbd> run</span><span><kbd>Esc</kbd> close</span><span><kbd>/</kbd> jump to the check</span></p>
+</div>
 <div class="toasts" id="toasts"></div>
 <dialog id="ask"><form method="dialog">
   <h3 id="askt"></h3><p id="asks"></p><textarea id="askv"></textarea>
@@ -563,7 +613,6 @@ $("#chips").innerHTML = EXAMPLES.map((e, i) => `<button class="chip" data-i="${i
 $("#chips").onclick = ev => { const i = ev.target.dataset.i; if (i !== undefined) { $("#text").value = EXAMPLES[i]; runCheck(); } };
 $("#go").onclick = () => runCheck();
 $("#text").addEventListener("keydown", e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) runCheck(); });
-addEventListener("keydown", e => { if (e.key === "/" && $("#drawer").hidden && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) { e.preventDefault(); $("#text").focus(); } });
 
 function renderIdle() {
   const s = entries.filter(e => e.status === "settled");
@@ -1173,6 +1222,140 @@ document.addEventListener("keydown", ev => {
   else if (ev.shiftKey && document.activeElement === f[0]) { ev.preventDefault(); f[f.length - 1].focus(); }
   else if (!ev.shiftKey && document.activeElement === f[f.length - 1]) { ev.preventDefault(); f[0].focus(); }
 });
+
+/* ---------- command palette (Ctrl/⌘+K) and keyboard shortcuts ---------- */
+// Commands reuse the page's own flows (tour, replay, runCheck, openDrawer). Every label goes in through textContent (mk).
+const MAC = /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
+$("#palbtn kbd").textContent = MAC ? "⌘ K" : "Ctrl K";
+$("#palbtn").setAttribute("aria-keyshortcuts", MAC ? "Meta+K" : "Control+K");
+let palFrom = null, palItems = [], palSel = 0;
+const palOpen = () => !$("#pal").hidden;
+const SECTIONS = [
+  ["Check a plan", "#asksec", "#text", "ask agent"],
+  ["While you were away", "#awaysec", null, "feed alerts watcher inbox"],
+  ["Watch an agent drift", "#replaysec", null, "replay terminal"],
+  ["The wall", "#wallsec", null, "ledger decisions rewind"],
+  ["It learns from you", "#learnbox", null, "rules corrections precision stats"],
+  ["Feed it your history", "#importbox", null, "import upload file export"],
+  ["What every agent reads", "#agentsbox", null, "agents.md claude.md mcp sync"],
+];
+function goTo(sel, focusSel) {
+  const t = $(sel); if (!t) return;
+  t.scrollIntoView({block: "start", behavior: reduced ? "auto" : "smooth"});
+  const f = (focusSel && $(focusSel)) || t;
+  if (f === t && !t.hasAttribute("tabindex")) { t.tabIndex = -1; t.classList.add("jumpto"); }
+  f.focus({preventScroll: true});
+}
+function checkText(t) {
+  if (checking) { toast("A check is already running. Try again when it lands."); return; }
+  $("#text").value = t;
+  $("#arena").scrollIntoView({block: "nearest", behavior: reduced ? "auto" : "smooth"});
+  runCheck();
+}
+function commands() {
+  return [
+    {group: "Action", label: "Take the tour", hint: "the product story in 60 seconds", keys: "guide walkthrough help", run: tour},
+    {group: "Action", label: "Replay an agent session", hint: "watch Sthira catch an agent drifting", keys: "demo claude code",
+      run: () => { goTo("#replaysec"); replay(); }},
+    // head: what the command is called, without the example text, so a search for "postgres" puts the decision first.
+    ...EXAMPLES.map(t => ({group: "Check", label: `Check: ${t}`, head: "check example plan", run: () => checkText(t)})),
+    ...SECTIONS.map(([label, sel, f, keys]) => ({group: "Go to", label, keys, run: () => goTo(sel, f)})),
+    {group: "Action", label: soundOn ? "Turn sound off" : "Turn sound on", keys: "audio mute toggle", run: () => $("#sound").click()},
+  ].map(c => ({...c, hay: `${c.group} ${c.label} ${c.keys || ""}`.toLowerCase(), head: c.head || `${c.group} ${c.label} ${c.keys || ""}`.toLowerCase()}));
+}
+function entryItems() {
+  return entries.filter(e => e.status !== "rejected").slice().reverse().map(e => ({
+    group: KIND[e.kind] || e.kind, kind: e.kind, entry: true, label: e.statement,
+    hint: [STATUS[e.status] || e.status, e.source.title, day(e.decided_at)].filter(Boolean).join(" · "),
+    hay: [KIND[e.kind] || e.kind, e.statement, e.rationale, e.source.quote, e.source.title, ...(e.alternatives_rejected || [])].join(" ").toLowerCase(),
+    run: () => openDrawer(e.id),
+  }));
+}
+function palRender() {
+  const q = $("#palq").value.trim().toLowerCase(), terms = q.split(/\s+/).filter(Boolean);
+  const cmds = commands(), has = (s, ts) => ts.every(t => s.includes(t));
+  // With a query: commands matched by name, then your decisions, then commands matched only by their example text.
+  palItems = (terms.length
+    ? [...cmds.filter(c => has(c.head, terms)), ...entryItems().filter(e => has(e.hay, terms)), ...cmds.filter(c => !has(c.head, terms) && has(c.hay, terms))]
+    : [...cmds, ...entryItems()]).slice(0, 80);
+  palSel = Math.min(palSel, Math.max(0, palItems.length - 1));
+  const list = $("#pallist");
+  if (!palItems.length) {
+    const none = mk("li", "pnone", `Nothing matches “${$("#palq").value.trim()}”.`); none.setAttribute("role", "presentation");
+    list.replaceChildren(none); $("#palq").removeAttribute("aria-activedescendant"); return;
+  }
+  list.replaceChildren(...palItems.map((it, i) => {
+    const li = mk("li", "popt"), body = mk("span", "pbody");
+    li.id = "palopt-" + i; li.setAttribute("role", "option"); li.setAttribute("aria-selected", i === palSel);
+    body.append(mk("b", null, it.label)); if (it.hint) body.append(mk("small", null, it.hint));
+    li.append(mk("span", "ptag " + (it.kind || it.group.toLowerCase().replace(/\W+/g, "")), it.group), body);
+    li.onclick = () => palRun(i);
+    li.onmousemove = () => { if (palSel !== i) palMove(i, false); };
+    return li;
+  }));
+  palMove(palSel);
+}
+function palMove(i, scroll = true) {
+  if (!palItems.length) return;
+  palSel = (i + palItems.length) % palItems.length;
+  document.querySelectorAll("#pallist .popt").forEach((n, k) => n.setAttribute("aria-selected", k === palSel));
+  const cur = $("#palopt-" + palSel);
+  $("#palq").setAttribute("aria-activedescendant", cur.id);
+  if (scroll) cur.scrollIntoView({block: "nearest"});
+}
+function openPalette() {
+  if (palOpen() || $("#ask").open || touring()) return;
+  palFrom = document.activeElement;
+  $("#palq").value = ""; palSel = 0; palRender();
+  $("#pscrim").hidden = $("#pal").hidden = false;
+  document.body.classList.add("palopen"); $("#palbtn").setAttribute("aria-expanded", "true");
+  $("#pallist").scrollTop = 0; $("#palq").focus();
+}
+function closePalette() {
+  if (!palOpen()) return;
+  $("#pscrim").hidden = $("#pal").hidden = true;
+  document.body.classList.remove("palopen"); $("#palbtn").setAttribute("aria-expanded", "false");
+  const back = palFrom; palFrom = null;
+  if (back && back.isConnected && back !== document.body) back.focus({preventScroll: true});
+}
+function palRun(i) {
+  const it = palItems[i]; if (!it) return;
+  closePalette();
+  if (!it.entry) closeDrawer();  // an entry swaps into the open drawer; anything else needs the page
+  it.run();
+}
+$("#palq").oninput = () => { palSel = 0; palRender(); $("#pallist").scrollTop = 0; };
+$("#pscrim").onclick = closePalette;
+$("#palbtn").onclick = () => palOpen() ? closePalette() : openPalette();
+// One capture-phase listener for every page shortcut, registered once. Capture lets the palette take Esc and Tab before
+// the drawer's own handler, so Esc closes the palette first, then a dialog (native), then the drawer.
+addEventListener("keydown", ev => {
+  const key = String(ev.key || "");
+  if ((ev.ctrlKey || ev.metaKey) && !ev.altKey && !ev.shiftKey && key.toLowerCase() === "k") {
+    if (!palOpen() && ($("#ask").open || touring())) return;
+    ev.preventDefault(); ev.stopPropagation();
+    palOpen() ? closePalette() : openPalette();
+    return;
+  }
+  if (palOpen()) {
+    if (ev.isComposing) return;
+    if (key === "Escape") closePalette();
+    else if (key === "ArrowDown") palMove(palSel + 1);
+    else if (key === "ArrowUp") palMove(palSel - 1);
+    else if (key === "Home" && ev.ctrlKey) palMove(0);
+    else if (key === "End" && ev.ctrlKey) palMove(palItems.length - 1);
+    else if (key === "Enter") palRun(palSel);
+    else if (key !== "Tab") return;  // Tab stays on the input: the palette is one field and a list
+    ev.preventDefault(); ev.stopPropagation();
+    return;
+  }
+  // "/" jumps to the check, unless you're typing somewhere or something is open on top of the page.
+  const a = document.activeElement;
+  if (key === "/" && !ev.ctrlKey && !ev.metaKey && !ev.altKey && $("#drawer").hidden && !$("#ask").open && !touring()
+      && !/INPUT|TEXTAREA|SELECT/.test(a?.tagName || "") && !a?.isContentEditable) {
+    ev.preventDefault(); $("#text").focus();
+  }
+}, true);
 
 /* ---------- boot ---------- */
 async function load() {
