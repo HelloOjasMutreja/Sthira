@@ -118,6 +118,8 @@ footer a{color:var(--accent)}
     <div class="step"><b>4 · Learns from you</b><span>Reject a bad extraction or correct a verdict, and the next run adapts.</span></div>
   </section>
 
+  <div id="activity"></div>
+
   <div class="grid">
     <div>
       <div class="card">
@@ -290,7 +292,34 @@ async function loadRules() {
       ${r.example ? `<div class="meta">e.g. “${esc(r.example.slice(0, 110))}”</div>` : ""}</div>`).join("") : "";
 }
 
+const ago = ts => { const s = Math.max(0, (Date.now() - Date.parse(ts)) / 1000); return s < 90 ? "just now" : s < 5400 ? Math.round(s / 60) + " min ago" : s < 129600 ? Math.round(s / 3600) + " h ago" : day(ts); };
+
+async function loadActivity() {
+  let feed = [];
+  try { feed = await j("/api/activity"); } catch (e) { return; }
+  const box = $("#activity");
+  if (!feed.length) { box.innerHTML = ""; return; }
+  const item = a => a.kind === "alert"
+    ? `<div class="verdict bad" style="margin-bottom:10px"><h3>⚠ ${esc(a.title)} · <span class="meta">${ago(a.ts)}</span></h3>
+        <div class="meta">The agent said</div><div style="margin:2px 0 8px">“${esc((a.detail.agent_said || "").slice(0, 220))}”</div>
+        <div class="meta">That goes against what you decided</div><div class="stmt">${esc(a.detail.decision)}</div>
+        <div class="quote">“${esc(a.detail.quote)}”</div>
+        <div class="meta">Decided ${day(a.detail.decided_at)} in “${esc(a.detail.source)}”</div>
+        ${a.detail.why ? `<p style="margin:8px 0 0">${esc(a.detail.why)}</p>` : ""}</div>`
+    : `<div class="row" style="padding:6px 0;border-top:1px solid var(--line)"><span>${a.kind === "error" ? "✗" : "✓"} ${esc(a.title)}</span><span class="meta">${ago(a.ts)}</span></div>`;
+  // Once the feed is on screen and this window is in front, the alerts count as seen (clears the window badge).
+  if (feed.some(a => a.kind === "alert") && document.visibilityState === "visible" && document.hasFocus()) {
+    fetch("/api/activity/seen", {method: "POST"}).catch(() => {});
+  }
+  const alerts = feed.filter(a => a.kind === "alert").slice(0, 3), rest = feed.filter(a => a.kind !== "alert").slice(0, 6);
+  box.innerHTML = `<div class="card" style="margin-bottom:20px"><h2>While you were away</h2>
+    <p class="sub">Sthira is watching your Claude Code sessions and your inbox folder in the background.</p>
+    ${alerts.map(item).join("")}${rest.map(item).join("")}</div>`;
+}
+setInterval(loadActivity, 5000);
+
 async function load() {
+  loadActivity();
   entries = await j("/api/entries");
   render();
   loadStats();

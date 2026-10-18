@@ -39,7 +39,8 @@ async def vercel_oidc(request, call_next):
 
 def con():
     c = store.connect()
-    if c.execute("SELECT COUNT(*) FROM entries").fetchone()[0] == 0 and (ROOT / "demo" / "seed.json").exists():
+    seedable = not os.environ.get("STHIRA_NO_SEED") and (ROOT / "demo" / "seed.json").exists()
+    if seedable and c.execute("SELECT COUNT(*) FROM entries").fetchone()[0] == 0:
         with _lock:
             if c.execute("SELECT COUNT(*) FROM entries").fetchone()[0] == 0:
                 seed.load(c, ROOT / "demo" / "seed.json")
@@ -185,6 +186,18 @@ def extract(body: ExtractBody):
         return [e.model_dump() for e in api.extract(min(body.limit or 3, 5), con=con())]
     except Exception as e:
         raise HTTPException(502, f"Model call failed: {e}")
+
+
+@app.get("/api/activity")
+def activity(limit: int = 30):
+    """What the background watcher has done: files read, entries waiting, agents caught going against decisions."""
+    return api.recent_activity(min(max(limit, 1), 100), con=con())
+
+
+@app.post("/api/activity/seen")
+def activity_seen():
+    api.mark_activity_seen(con=con())
+    return {"ok": True}
 
 
 @app.get("/api/rules")

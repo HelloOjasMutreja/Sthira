@@ -116,6 +116,18 @@ def learned_rules(con=None) -> list[dict]:
     return _feedback.learned_rules(con)
 
 
+def recent_activity(limit: int = 30, con=None) -> list[dict]:
+    """What the background watcher did: files read, entries waiting for review, and agents caught going against decisions."""
+    con = con or store.connect()
+    return store.recent_activity(con, limit)
+
+
+def mark_activity_seen(con=None) -> None:
+    """The user has looked at the activity feed: alerts so far stop counting as unseen."""
+    con = con or store.connect()
+    store.mark_activity_seen(con)
+
+
 def feedback_stats(con=None) -> dict:
     con = con or store.connect()
     return _feedback.stats(con)
