@@ -194,6 +194,12 @@ def activity(limit: int = 30):
     return api.recent_activity(min(max(limit, 1), 100), con=con())
 
 
+@app.post("/api/activity/seen")
+def activity_seen():
+    api.mark_activity_seen(con=con())
+    return {"ok": True}
+
+
 @app.get("/api/rules")
 def rules():
     return api.learned_rules(con=con())

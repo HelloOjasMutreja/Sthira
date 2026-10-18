@@ -74,3 +74,16 @@ def test_error_is_recorded_in_the_feed(tmp_path, monkeypatch):
     watch.scan_once(con, [inbox])
     feed = store.recent_activity(con)
     assert feed[0]["kind"] == "error" and "broken.zip" in feed[0]["title"]
+
+
+def test_unseen_alerts_clear_once_the_feed_is_viewed(tmp_path):
+    con = store.connect(tmp_path / "t.db")
+    assert store.unseen_alerts(con) == 0
+    store.add_activity(con, "alert", "first")
+    store.add_activity(con, "read", "a file")
+    store.add_activity(con, "alert", "second")
+    assert store.unseen_alerts(con) == 2  # only alerts count, not routine reads
+    store.mark_activity_seen(con)
+    assert store.unseen_alerts(con) == 0  # the old bug: this stayed at 2 forever
+    store.add_activity(con, "alert", "third")
+    assert store.unseen_alerts(con) == 1  # and new ones count again

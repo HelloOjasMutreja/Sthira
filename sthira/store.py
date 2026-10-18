@@ -72,6 +72,10 @@ CREATE TABLE IF NOT EXISTS activity (
     title TEXT NOT NULL,
     detail TEXT                    -- JSON
 );
+CREATE TABLE IF NOT EXISTS state (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS runs (
     id TEXT PRIMARY KEY,
     kind TEXT NOT NULL,
@@ -285,3 +289,26 @@ def recent_activity(con: sqlite3.Connection, limit: int = 30) -> list[dict]:
     rows = con.execute("SELECT id, ts, kind, title, detail FROM activity ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
     return [{"id": r["id"], "ts": r["ts"], "kind": r["kind"], "title": r["title"], "detail": json.loads(r["detail"] or "{}")}
             for r in rows]
+
+
+# ---- small key/value state (e.g. how far the user has read the activity feed) --------
+
+def get_state(con: sqlite3.Connection, key: str, default: str = "") -> str:
+    row = con.execute("SELECT value FROM state WHERE key = ?", (key,)).fetchone()
+    return row["value"] if row else default
+
+
+def set_state(con: sqlite3.Connection, key: str, value: str) -> None:
+    con.execute("INSERT OR REPLACE INTO state(key, value) VALUES (?, ?)", (key, value))
+    con.commit()
+
+
+def mark_activity_seen(con: sqlite3.Connection) -> None:
+    """Called when the feed is actually shown to the user; alerts up to here stop counting as unseen."""
+    last = con.execute("SELECT COALESCE(MAX(id), 0) FROM activity").fetchone()[0]
+    set_state(con, "activity_seen_id", str(last))
+
+
+def unseen_alerts(con: sqlite3.Connection) -> int:
+    seen = int(get_state(con, "activity_seen_id", "0") or 0)
+    return con.execute("SELECT COUNT(*) FROM activity WHERE kind = 'alert' AND id > ?", (seen,)).fetchone()[0]

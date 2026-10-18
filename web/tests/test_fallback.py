@@ -56,3 +56,13 @@ def test_activity_feed_endpoint():
     r = client.get("/api/activity")
     assert r.status_code == 200
     assert r.json()[0]["kind"] == "alert" and r.json()[0]["detail"]["decision"] == "Use Postgres"
+
+
+def test_marking_activity_seen_over_http():
+    from sthira import store
+
+    con = store.connect()
+    store.add_activity(con, "alert", "something new")
+    assert store.unseen_alerts(con) >= 1
+    assert client.post("/api/activity/seen").json() == {"ok": True}
+    assert store.unseen_alerts(store.connect()) == 0

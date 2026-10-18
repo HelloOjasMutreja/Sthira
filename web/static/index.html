@@ -307,6 +307,10 @@ async function loadActivity() {
         <div class="meta">Decided ${day(a.detail.decided_at)} in “${esc(a.detail.source)}”</div>
         ${a.detail.why ? `<p style="margin:8px 0 0">${esc(a.detail.why)}</p>` : ""}</div>`
     : `<div class="row" style="padding:6px 0;border-top:1px solid var(--line)"><span>${a.kind === "error" ? "✗" : "✓"} ${esc(a.title)}</span><span class="meta">${ago(a.ts)}</span></div>`;
+  // Once the feed is on screen and this window is in front, the alerts count as seen (clears the window badge).
+  if (feed.some(a => a.kind === "alert") && document.visibilityState === "visible" && document.hasFocus()) {
+    fetch("/api/activity/seen", {method: "POST"}).catch(() => {});
+  }
   const alerts = feed.filter(a => a.kind === "alert").slice(0, 3), rest = feed.filter(a => a.kind !== "alert").slice(0, 6);
   box.innerHTML = `<div class="card" style="margin-bottom:20px"><h2>While you were away</h2>
     <p class="sub">Sthira is watching your Claude Code sessions and your inbox folder in the background.</p>

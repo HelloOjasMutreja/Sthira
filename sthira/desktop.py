@@ -67,16 +67,14 @@ def title_for(proposed: int, alerts: int) -> str:
 def _badge_loop(window, stop: threading.Event, interval: float = 5.0) -> None:
     from . import store
 
-    seen_alerts = 0
     while not stop.wait(interval):
         try:
             con = store.connect()
             try:
                 proposed = con.execute("SELECT COUNT(*) FROM entries WHERE status = 'proposed'").fetchone()[0]
-                total_alerts = con.execute("SELECT COUNT(*) FROM activity WHERE kind = 'alert'").fetchone()[0]
+                unseen = store.unseen_alerts(con)  # the UI marks the feed seen once it is actually shown
             finally:
                 con.close()
-            unseen = max(0, total_alerts - seen_alerts) if seen_alerts or total_alerts else 0
             window.set_title(title_for(proposed, unseen))
         except Exception:
             continue  # the title is a nicety; never let it take the app down
