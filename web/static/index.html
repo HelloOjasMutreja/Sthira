@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&family=Noto+Serif+Devanagari:wght@600..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css">
 <style>
 :root{
   --chalk:#e6ebf6; --paper:#fbfaf7; --ink:#161a44; --ink-2:#4b5080; --line:#c9d1e6;
@@ -145,12 +146,13 @@ input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:9px;bac
 
 /* ---------- learning ---------- */
 .two{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+.two>*,.dials>*{min-width:0}
 .box{border:3px solid var(--ink);border-radius:22px;background:var(--paper);padding:20px;box-shadow:var(--shadow)}
 .dials{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px}
 .dial{border:3px solid var(--ink);border-radius:16px;padding:12px;text-align:center;background:#fff}
 .dial .n{font-size:42px;font-weight:800;letter-spacing:-.04em;line-height:1}
 .dial .l{font-size:13px;color:var(--ink-2);margin-top:4px;font-weight:600}
-.ring{width:96px;height:96px;margin:0 auto 4px;display:block}
+.ring{width:96px;height:auto;max-width:100%;aspect-ratio:1;margin:0 auto 4px;display:block}
 .ring .bg{stroke:var(--line)} .ring .fg{stroke:var(--jade);stroke-linecap:round;transition:stroke-dashoffset 1.3s cubic-bezier(.2,.8,.2,1)}
 .rule{border:2px solid var(--ink);border-radius:12px;padding:10px 12px;margin-top:10px;background:#f1f6ff;font-weight:600}
 .rule small{display:block;font-weight:500;color:var(--ink-2);margin-top:4px}
@@ -228,6 +230,31 @@ dialog .row{justify-content:flex-end}
 @media (prefers-reduced-motion:reduce){.arena .stone blockquote{clip-path:none}}
 .conf .stone blockquote{clip-path:none}
 
+/* ---------- guided tour (driver.js, themed to the page) ---------- */
+.tourline{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:0 0 20px}
+.tourline .btn{display:inline-flex;gap:8px;align-items:center}
+.tourline .btn b{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--saffron);font-size:10px}
+.toast.nudge{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:var(--saffron-soft);animation:none}
+.toast.nudge .row{margin:0;grid-column:1/-1;gap:8px}
+.toast.nudge .x{all:unset;cursor:pointer;font-size:20px;line-height:1;font-weight:800;padding:0 4px;border-radius:6px}
+.driver-popover.sthira-tour{background:var(--paper);color:var(--ink);border:3px solid var(--ink);border-radius:16px;box-shadow:var(--shadow-lg);font-family:var(--display);padding:18px 18px 14px;max-width:min(340px,calc(100vw - 32px))}
+.driver-popover.sthira-tour .driver-popover-title{font:800 22px/1.15 var(--display);letter-spacing:-.02em;margin-right:22px}
+.driver-popover.sthira-tour .driver-popover-description{font:400 17px/1.45 var(--inscribe);color:var(--ink-2);margin-top:6px}
+.driver-popover.sthira-tour .driver-popover-progress-text{font:700 13px var(--display);color:var(--ink-2)}
+.driver-popover.sthira-tour .driver-popover-footer{margin-top:16px;padding:0;border:0;max-width:none;color:var(--ink-2);font-size:14px;gap:8px;flex-wrap:wrap}
+.driver-popover.sthira-tour .driver-popover-footer button{font:700 14px var(--display);text-shadow:none;color:var(--ink);background:var(--paper);border:2px solid var(--ink);border-radius:10px;padding:6px 12px;box-shadow:3px 3px 0 var(--ink);transition:transform .08s,box-shadow .08s,background .15s}
+.driver-popover.sthira-tour .driver-popover-footer button:hover{background:var(--saffron-soft)}
+.driver-popover.sthira-tour .driver-popover-footer button:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
+.driver-popover.sthira-tour .driver-popover-footer .driver-popover-next-btn{background:var(--saffron)}
+.driver-popover.sthira-tour .driver-popover-footer .driver-popover-next-btn[disabled]{opacity:.7;cursor:wait;pointer-events:none}
+.driver-popover.sthira-tour .driver-popover-close-btn{color:var(--ink);font-size:22px;font-weight:800;width:34px;height:34px;top:6px;right:6px}
+.driver-popover.sthira-tour .driver-popover-close-btn:hover{color:var(--madder)}
+.driver-popover.sthira-tour .driver-popover-arrow-side-left{border-left-color:var(--ink)}
+.driver-popover.sthira-tour .driver-popover-arrow-side-right{border-right-color:var(--ink)}
+.driver-popover.sthira-tour .driver-popover-arrow-side-top{border-top-color:var(--ink)}
+.driver-popover.sthira-tour .driver-popover-arrow-side-bottom{border-bottom-color:var(--ink)}
+@media (prefers-reduced-motion:no-preference){.toast.nudge{animation:toastin .35s cubic-bezier(.2,.9,.3,1.2)}}
+
 @media (max-width:900px){
   .hero,.two{grid-template-columns:1fr}
   .conf{grid-template-columns:1fr}.conf .vs{height:30px}
@@ -279,7 +306,8 @@ dialog .row{justify-content:flex-end}
     <div>
       <h1>Is your AI about to undo what you decided?</h1>
       <p class="lede">Paste what an agent plans to do. Sthira checks it against everything you've settled, and shows you the receipt.</p>
-      <div class="ask">
+      <p class="tourline"><button class="btn small" id="tour" type="button"><b aria-hidden="true">▶</b>Take the tour</button><span class="kbd">60 seconds, no presenter needed</span></p>
+      <div class="ask" id="asksec">
         <label class="sr" for="text">What is the agent about to do?</label>
         <textarea id="text" placeholder="e.g. Migrate the user store from Postgres to MongoDB to avoid joins"></textarea>
         <div class="askrow">
@@ -301,7 +329,7 @@ dialog .row{justify-content:flex-end}
   </section>
 
   <section class="sec">
-    <div class="sechead">
+    <div class="sechead" id="wallhead">
       <div><h2>The wall</h2><p class="sub">Every decision you've settled, with its reason and the exact words you said. Nothing is ever deleted.</p></div>
       <div class="tabs" id="tabs"></div>
     </div>
@@ -316,14 +344,14 @@ dialog .row{justify-content:flex-end}
 
   <section class="sec">
     <div class="two">
-      <div class="box">
+      <div class="box" id="learnbox">
         <h2 style="font-size:30px">It learns from you</h2>
         <p class="sub" style="margin-bottom:14px">Reject a bad catch or correct a verdict, and the rule is used from then on.</p>
         <div class="dials" id="dials"></div>
         <div id="rules"></div>
       </div>
       <div style="display:grid;gap:24px">
-        <div class="box">
+        <div class="box" id="importbox">
           <h2 style="font-size:30px">Feed it your history</h2>
           <p class="sub" style="margin-bottom:14px">A ChatGPT or Claude export, a Claude Code session, or a meeting transcript.</p>
           <label class="drop" id="drop" for="file"><b>Drop a file here</b><br><span class="meta">or click to choose · .json .jsonl .md .txt .vtt .srt .zip</span>
@@ -339,7 +367,7 @@ dialog .row{justify-content:flex-end}
             </div>
           </div>
         </div>
-        <div class="box">
+        <div class="box" id="agentsbox">
           <h2 style="font-size:30px">What every agent reads</h2>
           <p class="sub" style="margin-bottom:12px"><code>sthira sync</code> writes this into <code>AGENTS.md</code> and <code>CLAUDE.md</code>. Over MCP, agents call <code>check</code> before they act.</p>
           <pre id="agents">…</pre>
@@ -368,6 +396,7 @@ dialog .row{justify-content:flex-end}
   <div class="row"><button type="button" class="btn ghost" id="askno">Cancel</button><button type="button" class="btn go" id="askok">Save</button></div>
 </form></dialog>
 
+<script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js" crossorigin="anonymous"></script>
 <script>
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -478,7 +507,7 @@ function renderOffline(err, text) {
 function fineNote(v) {
   return v.fallback === "keyword" ? "The model is offline, so this is a keyword match on alternatives you rejected. It is not a model verdict."
        : v.fallback === "recorded" ? "Recorded from a real local Qwen3 run. The hosted model is offline."
-       : `Flagged by ${esc(v.model)}, then double-checked by a second pass.`;
+       : `Flagged by ${esc(v.model)}${v.cached ? " · cached" : ""}, then double-checked by a second pass.`;
 }
 async function renderOverruled(v, text) {
   const c = v.conflicts[0], e = c.entry, arena = $("#arena");
@@ -514,7 +543,7 @@ function renderCleared(v) {
   $("#arena").innerHTML = `<div class="stamp ok">CLEARED</div><div class="cleared">
     <h3 style="margin:56px 0 0;font-size:24px;letter-spacing:-.02em">${unrelated ? "Nothing you've settled covers this." : "This follows what you've settled."}</h3>
     <p style="margin:0;color:var(--ink-2)">${unrelated ? "No related decisions, so go ahead." : "The plan agrees with every related decision."}</p>
-    <p class="fine">Checked by ${esc(v.model)}</p></div>`;
+    <p class="fine">Checked by ${esc(v.model)}${v.cached ? " · cached" : ""}</p></div>`;
   $("#arena").classList.remove("hit"); blip("ok");
 }
 
@@ -704,6 +733,76 @@ const dz = $("#drop");
 ["dragenter", "dragover"].forEach(t => dz.addEventListener(t, e => { e.preventDefault(); dz.classList.add("over"); }));
 ["dragleave", "drop"].forEach(t => dz.addEventListener(t, e => { e.preventDefault(); dz.classList.remove("over"); }));
 dz.addEventListener("drop", e => upload(e.dataTransfer.files[0]));
+
+/* ---------- guided tour: the product story in about a minute, no presenter needed ---------- */
+const TOURED = "sthira-toured";
+const seenTour = () => { try { return !!localStorage.getItem(TOURED); } catch (e) { return true; } };
+const markToured = () => { try { localStorage.setItem(TOURED, "1"); } catch (e) {} };
+async function checkExampleForTour() {
+  while (checking) await sleep(150);  // a check already running: let it finish first
+  $("#text").value = EXAMPLES[0];  // the exact text the recorded fallback matches
+  await runCheck();
+  await sleep(reduced ? 0 : 450);  // let the stamp land before moving on
+}
+function tour() {
+  $("#nudge")?.remove();
+  if (!window.driver?.js?.driver) { toast("The tour couldn't load. Check your connection and reload the page.", "bad"); return; }
+  markToured();
+  let busy = false;
+  const narrow = matchMedia("(max-width: 900px)").matches;
+  // driver.js centres the highlighted decision, which can push the OVERRULED stamp off the top. Scroll it back if everything fits.
+  const showStamp = () => {
+    const a = $("#arena").getBoundingClientRect(), s = $("#stone")?.getBoundingClientRect();
+    if (!s || a.top >= 0) return;
+    const room = innerHeight - (narrow ? 280 : 24);  // leave space under the decision for the popover on phones
+    if (s.bottom - a.top + 12 <= room) scrollBy({top: a.top - 12, behavior: reduced ? "auto" : "smooth"});
+  };
+  const d = window.driver.js.driver({
+    showProgress: true, progressText: "{{current}} of {{total}}", nextBtnText: "Next", prevBtnText: "Back", doneBtnText: "Done",
+    popoverClass: "sthira-tour", overlayColor: "#161a44", overlayOpacity: .55, stagePadding: 16, stageRadius: 22,
+    animate: !reduced, smoothScroll: !reduced, allowClose: true,
+    steps: [
+      {element: $("#wall .tab-card") || $("#wallhead"), popover: {title: "What you decided", side: "bottom", align: "start",
+        description: "Sthira read the team's chats and meetings, and kept each decision with its reason, the exact words said, and where. Nothing is deleted: old decisions move to History."}},
+      {element: "#asksec", popover: {title: "An agent is about to act", side: "bottom", align: "start",
+        description: "Say a coding agent plans to move the user store to MongoDB. Press Next and Sthira checks the plan against everything you've settled.",
+        onNextClick: async () => {
+          if (busy) return;
+          busy = true;
+          const btn = document.querySelector(".driver-popover-next-btn");
+          if (btn) { btn.textContent = "Checking…"; btn.disabled = true; }
+          try { await checkExampleForTour(); } finally { busy = false; }
+          if (d.isActive()) d.moveNext();
+        }}},
+      // The whole verdict can be taller than the screen, so point at the decision it cites; the stamp stays in view above it.
+      {element: "#stone", onHighlighted: showStamp, popover: {title: "It speaks up, with the receipt", side: narrow ? "bottom" : "left", align: "start",
+        description: "OVERRULED: the decision it goes against, the exact words you said, and why. Keep your decision, or change your mind and the old one stays in history."}},
+      {element: "#learnbox", popover: {title: "It learns from you", side: "top", align: "start",
+        description: "Reject a bad catch or correct a verdict, and it becomes a rule for every later run. On qwen3:4b, precision on unseen chats rose from 60% to 71% after one round."}},
+      {element: "#awaysec", popover: {title: "It watches while you're away", side: "top", align: "start",
+        description: "Sthira reads your Claude Code sessions and an inbox folder in the background, and flags the moment an agent goes against a decision."}},
+      {element: "#importbox", popover: {title: "Feed it your history", side: "top", align: "start",
+        description: "Drop a ChatGPT or Claude export, a Claude Code session or a meeting transcript. A local open-weight model reads it and cites every quote."}},
+      {element: "#agentsbox", popover: {title: "Every agent reads it", side: "top", align: "start",
+        description: "The ledger goes into AGENTS.md and CLAUDE.md, and over MCP agents call check before they act. That's the tour."}},
+    ],
+  });
+  d.drive();
+}
+$("#tour").onclick = tour;
+function offerTour() {
+  if (seenTour() || $("#nudge")) return;
+  const n = document.createElement("div"); n.className = "toast nudge"; n.id = "nudge"; n.setAttribute("role", "status");
+  const msg = document.createElement("span"); msg.textContent = "New here? Take the 60-second tour.";
+  const x = document.createElement("button"); x.className = "x"; x.type = "button"; x.setAttribute("aria-label", "Dismiss"); x.textContent = "×";
+  const row = document.createElement("div"); row.className = "row";
+  const go = document.createElement("button"); go.className = "btn go small"; go.type = "button"; go.textContent = "Start the tour";
+  const no = document.createElement("button"); no.className = "btn small ghost"; no.type = "button"; no.textContent = "Not now";
+  const dismiss = () => { markToured(); n.remove(); };
+  go.onclick = tour; x.onclick = no.onclick = dismiss;
+  row.append(go, no); n.append(msg, x, row); $("#toasts").appendChild(n);
+}
+setTimeout(offerTour, reduced ? 300 : 1600);
 
 /* ---------- talk to your ledger (Sarvam voice) ---------- */
 let voiceOn = false, rec = null, recChunks = [], tAudio = null;
