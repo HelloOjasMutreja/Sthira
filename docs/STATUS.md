@@ -10,14 +10,13 @@ Update this file whenever you finish something, get blocked, or hand off (for ex
 
 | Workstream | Owner | Status | Next step |
 |---|---|---|---|
-| Core + demo/eval (#1, #2) | Claude | done, CI green | merge at ~12:00 |
-| Cursor rules #10 · model-down errors #11 · .vtt/.srt #12 · Gemini #13 · learned rules #14 · review fixes #15 | Claude | done, stacked on #2 | merge in order after #2 (integration dry-run: all merge cleanly, 17+ tests pass) |
-| Web demo (#3) | Claude + Vidit (#9 merged) | **live**: learned-rules panel, labelled offline fallbacks, scoped import | merge last |
-| Dogfood: Sthira on our own build session | Claude | running (qwen3:4b) | package as a demo moment |
-| **Hosted model** | **Ojas** | blocked | Vercel card **or** Groq key in project env |
-| **ShipWright app** | **Ojas** | not installed | install now if we want leaderboard credit before the merges |
-| **Collaborators: Vidit, Danica** | **Ojas** | todo | fork PRs miss ShipWright's full review |
-| Demo rehearsal / backup video / submission / X post | Danica | todo | `docs/DEMO_SCRIPT.md`, `docs/SUBMISSION.md` |
+| **All code is on `main`** (PRs #1 to #3 and #9 to #17 merged 12:07) | Claude | done; fresh-clone check: 31 tests pass, CLI runs, CI green | keep `main` green: branch, PR, merge |
+| Live demo https://sthira-mocha.vercel.app | Claude | deployed from `main` (hosted open-weight model via Groq) | none |
+| PR #8 (Vidit's web scaffold) | Vidit | overlaps the merged web app | close it, or send a small follow-up PR for anything it adds |
+| **ShipWright app** | **Ojas** | not installed, so merged PRs got no review | install it now; PRs opened **from now on** get reviewed and count on the leaderboard |
+| **Rotate the Groq and Anthropic keys after the event** | **Ojas** | todo | both were shared in a chat |
+| Collaborators: Vidit + Danica | **Ojas** | todo | Settings → Collaborators |
+| Demo rehearsal / backup video / submission / X post | Danica | todo | `docs/DEMO_SCRIPT.md`, `docs/SUBMISSION.md`. **First-round evaluation 14:00 to 15:30.** |
 
 ## Keys and secrets (names only, never values here)
 
@@ -45,6 +44,7 @@ Create these in `demo/` (fictional project "Acme Notes", a note-taking app):
 4. `eval/gold.json`: the list of real decisions, questions and commitments you planted, so we can measure precision and recall.
 
 ## Log
+- 12:08: Merged everything into `main` in dependency order (dry-run clean first), verified from a fresh clone, redeployed the live site from `main`. Stats: 31 tests, 7 CLI commands added since the plan, 5 input formats.
 - 11:35: Hosted model live (Groq, qwen3.8-27b + gpt-oss-120b fallback): checks ~1 s, upload+extract ~2 s. Production was down about 5 min at 11:30 because I deployed a half-merged tree (fixed; deploys now gated on tests).
 - 11:10: Added #10–#15 (Cursor rules, model-down errors, subtitles, Gemini, learned rules, Vidit's review fixes). Learned-rules panel live. Integration dry-run clean. Dogfood found real decisions from our own session.
 - 10:55: Merged Vidit's #9 (labelled keyword fallback for typed checks) and redeployed. Handbook update: first-round eval 14:00–15:30, criteria published, live URL no longer required (we have one anyway). Primer PDF in docs/primer/.
