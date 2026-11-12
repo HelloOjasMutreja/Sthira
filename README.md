@@ -32,7 +32,7 @@ $ sthira check "Migrate the user store from Postgres to MongoDB to avoid joins"
 
 And in the app, the same moment: your agent's plan is struck through, **OVERRULED** is stamped on, and the decision you carved earlier rises with your own words.
 
-<div align="center"><img src="docs/social/sthira-overruled.jpg" alt="Sthira stopping an agent that wants to add password login, citing the decision to use magic links only" width="720"></div>
+<div align="center"><img src="docs/brand/overruled.png" alt="Sthira stopping an agent that wants to add password login, citing the decision to use magic links only" width="720"></div>
 
 ## What it does
 

@@ -2,6 +2,13 @@
 
 Update this file whenever you finish something, get blocked, or hand off (for example near a usage limit). Newest first.
 
+## 13 Nov 2026: rebrand, on branch `feat/brand-strata` (not merged, not deployed)
+
+- **What:** the web and desktop UI is restyled as "settled strata" (see `docs/BRAND.md`). Only `web/static/index.html` changed in behaviour: new stylesheet, the strata canvas in the hero, a new mark and footer. Every element id and flow is unchanged.
+- **Checked:** 77 tests pass. In Chromium at 1440, 820 and 375px: no console errors, no horizontal overflow, 60 fps. Check, keep, change-my-mind, replay, drawer, palette and tour all run.
+- **Open:** the hosted Groq key has expired (401), so both live sites answer from recorded verdicts and "Ask your ledger" fails until a new key is set. The mic was still never tested in a browser.
+- **Next:** a human opens the PR; Vidit owns `web/`, so he should review it.
+
 ## Board
 
 **⏰ First-round evaluation runs 14:00–15:30 (be demo-ready by 14:00).** Criteria: one working feature · relevance to the theme · clear problem and solution. Submit: repo URL + Track 2 / O2 (portal TBA).
