@@ -39,7 +39,23 @@ button{font:inherit;cursor:pointer;color:inherit}
 code{font:.9em var(--mono);background:var(--chalk);border:1px solid var(--line);border-radius:3px;padding:0 5px}
 
 /* ---------- top bar ---------- */
-.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 0;flex-wrap:wrap}
+.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px;padding:14px 0}
+.nav{display:flex;gap:2px;margin:0 auto 0 22px}
+.nav a{position:relative;padding:7px 12px;font-size:14.5px;color:var(--ink-2);text-decoration:none;white-space:nowrap;transition:color .15s}
+.nav a:hover,.nav a[aria-current]{color:var(--ink)}
+.nav a[aria-current]::after{content:"";position:absolute;left:12px;right:12px;bottom:-15px;height:2px;background:var(--ink)}
+#navalert{display:inline-block;width:7px;height:7px;background:var(--madder);margin-left:7px;vertical-align:1px}
+#navalert[hidden]{display:none}
+/* four views in one file: only the one named on <body> is laid out */
+.view{display:none}
+body[data-view=home] .view[data-v=home],body[data-view=ledger] .view[data-v=ledger],body[data-view=proof] .view[data-v=proof],body[data-view=connect] .view[data-v=connect]{display:block}
+.phead{display:flex;align-items:end;justify-content:space-between;gap:24px 40px;flex-wrap:wrap;padding:76px 0 40px}
+.phead h2{font-size:clamp(40px,5.2vw,70px);line-height:1.02}
+.phead .sub{font-size:18px;line-height:1.5;max-width:50ch;margin-top:16px}
+.sec:has(>.phead){padding-top:0}
+.textbtn{all:unset;cursor:pointer;margin-left:auto;font-size:14px;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line-2)}
+.textbtn:hover{color:var(--ink);text-decoration-color:var(--ink)}
+.textbtn:focus-visible{outline:2px solid var(--jade);outline-offset:3px}
 .top::before{content:"";position:absolute;z-index:-1;top:0;bottom:0;left:calc(50% - 50vw);right:calc(50% - 50vw);background:rgba(255,255,255,.9);
   backdrop-filter:blur(12px) saturate(1.4);-webkit-backdrop-filter:blur(12px) saturate(1.4);border-bottom:1px solid var(--line)}
 .mark{display:flex;align-items:center;gap:11px;text-decoration:none;color:var(--ink)}
@@ -79,6 +95,7 @@ textarea{display:block;width:100%;min-height:118px;resize:vertical;border:1px so
 textarea:focus-visible{outline:none;box-shadow:0 0 0 4px var(--mint)}
 textarea::placeholder{color:#8d938e}
 .askrow{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:14px 0 4px}
+.lede{margin-bottom:30px}
 .kbd{font:400 12px var(--mono);color:var(--ink-2)}
 .chips{display:flex;gap:7px;flex-wrap:wrap;margin:18px 0 2px}
 .chip{border:1px solid var(--line);background:var(--paper);border-radius:4px;padding:7px 12px;font-size:13.5px;color:var(--ink-2);transition:border-color .15s,color .15s}
@@ -137,10 +154,24 @@ textarea::placeholder{color:#8d938e}
 @media (max-width:600px){.cmp{grid-template-columns:1fr;gap:6px}.cmp .arr{justify-self:center;transform:rotate(90deg)}}
 
 /* ---------- section scaffolding ---------- */
-.sec{margin:0;padding:96px 0 0}
+.sec{margin:0;padding:112px 0 0}
+#awaysec:not(:has(.conf,.rd,#dropbox>*)){display:none}
 .sechead{display:flex;align-items:start;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:30px;border-top:1px solid var(--ink);padding-top:22px}
 h2{margin:0;font:400 clamp(30px,3.5vw,46px)/1.06 var(--serif);letter-spacing:-.02em}
 .sub{margin:10px 0 0;color:var(--ink-2);max-width:58ch}
+
+/* ---------- how it works: a real sequence, so it is numbered ---------- */
+.how h2{font-size:clamp(34px,4.6vw,62px);max-width:13ch}
+.steps{list-style:none;margin:48px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--ink);counter-reset:step}
+.steps li{counter-increment:step;padding:26px 36px 4px 0;min-width:0;display:flex;flex-direction:column;align-items:flex-start}
+.steps li+li{border-left:1px solid var(--line);padding-left:36px}
+.steps li::before{content:counter(step);display:block;font:500 12px var(--mono);color:var(--ink-2);margin-bottom:34px}
+.pix{display:block;width:144px;height:84px;margin-bottom:30px;overflow:visible;shape-rendering:crispEdges}
+.pix .k{fill:var(--ink)} .pix .o{fill:var(--madder)} .pix .g{fill:var(--jade)}
+.steps h3{margin:0 0 10px;font:400 28px/1.1 var(--serif);letter-spacing:-.015em}
+.steps p{margin:0 0 16px;color:var(--ink-2);font-size:15.5px;line-height:1.55;max-width:36ch}
+.steps a{font-size:14.5px;font-weight:500;margin-top:auto}
+@media (max-width:900px){.steps{grid-template-columns:minmax(0,1fr)}.steps li{padding:24px 0 30px}.steps li+li{border-left:0;border-top:1px solid var(--line);padding-left:0}.steps li::before{margin-bottom:22px}}
 
 /* ---------- away feed ---------- */
 .feed{display:grid;gap:14px}
@@ -185,20 +216,22 @@ input[type=range]::-moz-range-thumb{width:12px;height:22px;background:var(--ink)
 .thunk{animation:settle .6s steps(6) both}
 .dust{position:absolute;left:50%;bottom:8px;width:6px;height:6px;background:var(--jade);opacity:0;animation:dust .6s steps(6) forwards}
 
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:28px 64px;align-items:start;margin-top:112px;padding-top:30px;border-top:1px solid var(--ink)}
+#upmsg{margin:10px 0 0} #upmsg:empty{display:none}
+@media (max-width:900px){.split{grid-template-columns:minmax(0,1fr);margin-top:72px}}
+
 /* ---------- learning ---------- */
-.two{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;border-top:1px solid var(--ink);padding-top:28px}
-.two>*,.dials>*{min-width:0}
-.box{border:1px solid var(--line);border-radius:8px;background:var(--paper);padding:28px}
-.box h2{font-size:32px!important}
-.dials{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin:22px 0 18px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.dial{padding:16px 14px 14px 0;text-align:left}
-.dial+.dial{border-left:1px solid var(--line);padding-left:16px}
-.dial .n{font:400 54px/1 var(--serif);letter-spacing:-.03em}
-.dial .l{font:400 11.5px/1.4 var(--mono);color:var(--ink-2);margin-top:8px}
-.ring{width:66px;height:auto;max-width:100%;aspect-ratio:1;margin:0;display:block}
+.dials>*{min-width:0}
+.dials{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--ink);border-bottom:1px solid var(--line)}
+.dial{padding:26px 20px 24px 0;text-align:left;display:flex;flex-direction:column;justify-content:space-between;gap:14px;min-height:190px}
+.dial+.dial{border-left:1px solid var(--line);padding-left:28px}
+.dial .n{font:400 clamp(60px,8vw,112px)/.9 var(--serif);letter-spacing:-.04em}
+.dial .l{font:400 12px/1.4 var(--mono);color:var(--ink-2)}
+.ring{width:clamp(72px,9vw,112px);height:auto;max-width:100%;aspect-ratio:1;margin:0;display:block}
 .ring text{font-family:var(--display)}
 .ring .bg{stroke:var(--line)} .ring .fg{stroke:var(--jade);transition:stroke-dashoffset 1.3s cubic-bezier(.2,.8,.2,1)}
-.rule{border-left:2px solid var(--ink);padding:9px 14px;margin-top:10px;background:var(--chalk);font-weight:500;font-size:15px}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:12px;margin-top:28px}
+.rule{border-left:2px solid var(--ink);padding:14px 18px;background:var(--chalk);font-weight:500;font-size:15.5px;line-height:1.45}
 .rule small{display:block;font:400 11.5px/1.5 var(--mono);color:var(--ink-2);margin-top:5px}
 .drop{display:block;cursor:pointer;border:1px dashed var(--ink);border-radius:var(--r);padding:30px 22px;text-align:center;background:var(--paper) var(--dots) 0 0/9px 9px;transition:background-color .15s}
 .drop b{font-weight:550}
@@ -233,31 +266,44 @@ input[type=range]::-moz-range-thumb{width:12px;height:22px;background:var(--ink)
 }
 @media (max-width:900px){.reader{grid-template-columns:1fr}.paper{height:86px}.paper i:nth-child(n+6){display:none}}
 pre{margin:0;background:var(--ink);color:#dfe5df;border-radius:var(--r);padding:16px 18px;overflow:auto;font:12.5px/1.6 var(--mono);max-height:330px;white-space:pre-wrap}
-/* ---------- use it today: install tabs + ledger export ---------- */
-.use{margin-top:26px;padding-top:22px;border-top:1px solid var(--line)}
-.use h3{margin:0;font:400 24px/1.15 var(--serif)}
-.itabs{margin:14px 0 12px;gap:6px}
+/* ---------- connect: what agents read, and how to set it up. Two panels that share a height. ---------- */
+.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;align-items:stretch}
+.panel{display:flex;flex-direction:column;min-width:0;border:1px solid var(--line);border-radius:8px;padding:30px}
+.panel h3{margin:0;font:400 30px/1.1 var(--serif);letter-spacing:-.015em}
+.panel .sub{margin:10px 0 20px;font-size:15px}
+.panel>pre{flex:1;max-height:430px}
+.itabs{margin:0 0 12px;gap:6px}
 .itab{font-size:13px;padding:5px 11px}
 .itab[aria-selected=true]{background:var(--ink);border-color:var(--ink);color:#fff}
-.ipanel{border:1px solid var(--line);border-radius:var(--r);background:var(--paper);padding:12px}
+.ipanel{flex:1;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r);background:var(--paper);padding:12px}
 .ihead{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;margin:0 0 10px}
 .ihead p{margin:0;font-size:14px;color:var(--ink-2);min-width:0}
 .ihead .btn{flex:none}
-.ipanel pre{max-height:none;overflow-wrap:anywhere}
-.iexport{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:18px}
-.iexport .meta{flex-basis:100%}
+.ipanel pre{flex:1;max-height:none;overflow-wrap:anywhere}
+.iexport{display:flex;gap:8px 10px;flex-wrap:wrap;align-items:center;margin-top:28px;padding-top:22px;border-top:1px solid var(--line)}
+.iexport p{margin:0 auto 0 0;color:var(--ink-2);font-size:15px}
+@media (max-width:900px){.pair{grid-template-columns:minmax(0,1fr)}.panel{padding:22px 18px}}
 @media (max-width:600px){.ihead{flex-direction:column}.ipanel{padding:10px}.ipanel pre{padding:12px}}
 
-/* ---------- footer: the ledger closes on black, with what went against it stacked in the corner ---------- */
-.wrap>footer{position:relative;margin:120px calc(50% - 50vw) 0;background:var(--ink);color:#e9ece8;overflow:hidden}
-.footin{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:84px 24px 40px;display:grid;gap:44px}
-.footbig{margin:0;font:400 clamp(44px,7.4vw,112px)/.98 var(--serif);letter-spacing:-.03em;max-width:9ch}
-.footrow{display:flex;gap:10px 28px;flex-wrap:wrap;align-items:baseline;font:400 12.5px var(--mono);color:#9aa19c}
-.footrow .deva{font-size:26px;color:#fff;border:0;padding:0}
-.footrow a{color:#e9ece8}
-.footfine{margin:0;max-width:74ch;font-size:13.5px;line-height:1.55;color:#8b918d}
-#stairs{position:absolute;right:0;bottom:0;width:min(62vw,860px);height:100%;shape-rendering:crispEdges;pointer-events:none}
-@media (max-width:700px){#stairs{width:100vw;height:46%;opacity:.9}.footin{padding-bottom:210px}}
+/* ---------- footer: the page opens on white strata and closes on the same strata, on black ---------- */
+.wrap>footer{position:relative;margin:150px calc(50% - 50vw) 0;background:var(--ink);color:#e9ece8;overflow:hidden}
+.strata.dark{left:52%;right:0}
+.strata.dark::after{background-image:linear-gradient(rgba(11,11,12,.6) 1px,transparent 1px),linear-gradient(90deg,rgba(11,11,12,.6) 1px,transparent 1px)}
+.footin{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:84px 24px 30px;display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:56px 104px;align-items:end}
+.footbig{margin:0;font:400 clamp(38px,4.8vw,68px)/1.02 var(--serif);letter-spacing:-.025em;max-width:10ch}
+.footsub{display:flex;gap:12px;align-items:baseline;margin:20px 0 0;color:#9aa19c;font-size:15px}
+.footsub .deva{font-size:22px;color:#fff;border:0;padding:0}
+.footnav{display:flex;gap:72px}
+.footnav div{display:grid;gap:10px;align-content:start;font-size:14.5px}
+.footnav a{color:#e9ece8;text-decoration:none}
+.footnav a:hover{text-decoration:underline}
+.footnav span,.footnav button{color:#8b918d}
+.footnav button{all:unset;cursor:pointer;color:#8b918d}
+.footnav button:hover{color:#e9ece8}
+.footnav button:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
+.footfine{grid-column:1/-1;margin:0;max-width:64ch;padding-top:22px;border-top:1px solid #26292a;font:400 11.5px/1.6 var(--mono);color:#7b827d}
+@media (max-width:900px){.footin{grid-template-columns:minmax(0,1fr);gap:44px}}
+@media (max-width:700px){.strata.dark{left:0;top:auto;height:150px}.footin{padding-top:64px;padding-bottom:176px}.footnav{gap:48px}}
 
 /* ---------- toast + dialog ---------- */
 .toasts{position:fixed;right:20px;bottom:80px;display:grid;gap:8px;z-index:50;max-width:min(380px,90vw)}
@@ -476,12 +522,12 @@ body.palopen{overflow:hidden}
 }
 
 /* ---------- insights ---------- */
-.charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin-top:20px;border-top:1px solid var(--line);padding-top:18px}
+.charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
 .charts>*{min-width:0}
-.chart{margin:0}
+.chart{margin:0;border:1px solid var(--line);border-radius:8px;padding:24px 26px 22px}
 .chart figcaption{font-weight:550;font-size:14px;line-height:1.3;margin:0 0 10px}
 .chart figcaption span{display:block;min-height:1.3em;font:400 11.5px/1.6 var(--mono);color:var(--ink-2)}
-.chart .cv{position:relative;height:170px;width:100%}
+.chart .cv{position:relative;height:240px;width:100%}
 .chart canvas{display:block;max-width:100%}
 @media (max-width:600px){.charts{grid-template-columns:minmax(0,1fr)}}
 
@@ -532,7 +578,7 @@ body.palopen{overflow:hidden}
 .evwrong ul{margin:0;padding:0 0 0 18px;display:grid;gap:6px;font-size:14px;overflow-wrap:anywhere}
 .evcard .dsec{margin:18px 0 10px}
 .evwrong .dsec{margin:0 0 6px;color:var(--madder-ink)}
-.evlimits{margin-top:28px;border:1px dashed var(--ink);border-radius:var(--r);background:var(--paper);padding:20px 24px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 24px;align-items:center}
+.evlimits{margin-top:24px;border:1px dashed var(--ink);border-radius:var(--r);background:var(--paper);padding:20px 24px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 24px;align-items:center}
 .evlimits ul{margin:0;padding:0 0 0 18px;display:grid;gap:5px;font-size:15px}
 .evlimits .dsec{margin:0 0 8px}
 @media (max-width:1100px){.evbig s{font-size:36px}.evbig b{font-size:60px}}
@@ -541,26 +587,30 @@ body.palopen{overflow:hidden}
 
 @media (max-width:900px){
   .hero{grid-template-columns:minmax(0,1fr);gap:34px;padding:40px 0 56px}
-  .strata{left:calc(50% - 50vw);top:auto;height:560px}
+  .hero .strata{left:calc(50% - 50vw);top:auto;height:560px}
   .arena,.idle{min-height:420px}
-  .two{grid-template-columns:minmax(0,1fr)}
   .conf{grid-template-columns:1fr}.conf .vs{height:34px}
   .rewind{grid-template-columns:1fr;gap:8px}.rewind output{text-align:left}
-  .sec{padding-top:72px}
-  .box{padding:22px 18px}
+  .sec{padding-top:76px}
+  .phead{padding:48px 0 30px}
 }
 @media (max-width:600px){
   .wrap{padding:0 16px}
   .footin{padding-left:16px;padding-right:16px}
-  .top{flex-wrap:nowrap;padding:11px 0}
-  .pills{flex-wrap:nowrap;min-width:0}
-  .pills .pill:nth-child(n+3){display:none}
-  .pills .pill:nth-child(2){min-width:0}
+  .arena{scroll-margin-top:112px}
+  .top{flex-wrap:wrap;padding:11px 0 0;gap:0 10px}
+  .pills{flex-wrap:nowrap;min-width:0;margin-left:auto}
+  .pills .pill:nth-child(3){display:none}
+  .pills .pill:nth-child(1){min-width:0}
+  .nav{order:3;flex-basis:100%;margin:8px -4px 0;overflow-x:auto}
+  .nav a{padding:8px 10px 11px}
+  .nav a[aria-current]::after{left:10px;right:10px;bottom:0}
   #model{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:14ch}
   .talk-fab{padding:13px}.talk-fab span{display:none}
-  .dial .n{font-size:40px}
+  .dial{min-height:150px;padding:18px 10px 16px 0}.dial+.dial{padding-left:14px}
+  .rules{grid-template-columns:minmax(0,1fr)}
   .deva{display:none}
-  .footrow .deva{display:inline}
+  .footsub .deva{display:inline}
 }
 
 /* ---------- talk to your ledger ---------- */
@@ -592,151 +642,205 @@ body.palopen{overflow:hidden}
 <body>
 <div class="wrap">
   <header class="top">
-    <a class="mark" href="#" aria-label="Sthira, Sanskrit for steady">
+    <a class="mark" href="#/" data-go="home" aria-label="Sthira, Sanskrit for steady">
       <svg class="glyph" viewBox="0 0 5 5" aria-hidden="true"><rect class="cap" x="4" y="0" width="1" height=".82"/><rect x="3" y="1" width="2" height=".82"/><rect x="2" y="2" width="3" height=".82"/><rect x="1" y="3" width="4" height=".82"/><rect x="0" y="4" width="5" height=".82"/></svg>
       <span class="latin">Sthira</span>
       <span class="deva" lang="sa" aria-hidden="true">स्थिर</span>
     </a>
+    <nav class="nav" id="nav" aria-label="Sections">
+      <a href="#/" data-go="home">Check</a>
+      <a href="#/ledger" data-go="ledger">Ledger<i id="navalert" hidden title="An agent went against a decision"></i></a>
+      <a href="#/proof" data-go="proof">Proof</a>
+      <a href="#/connect" data-go="connect">Connect</a>
+    </nav>
     <div class="pills">
+      <span class="pill" title="The model answering on this page"><i></i><span id="model">connecting</span></span>
       <button class="pill kbtn" id="palbtn" type="button" aria-label="Open the command palette" aria-haspopup="dialog" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.6-4.6"/></svg><kbd>Ctrl K</kbd></button>
-      <span class="pill"><i></i><span id="model">connecting</span></span>
-      <span class="pill">open-weight, MIT</span>
-      <span class="pill"><button id="sound" aria-pressed="false" title="Toggle sound effects">Sound off</button></span>
       <a class="pill" href="https://github.com/HelloOjasMutreja/Sthira">GitHub</a>
     </div>
   </header>
 
-  <section class="hero">
-    <div class="strata" aria-hidden="true"><canvas id="strata"></canvas></div>
-    <div>
-      <h1>Is your AI about to undo what you decided?</h1>
-      <p class="lede">Paste what an agent plans to do. Sthira checks it against everything you've settled, and shows you the receipt.</p>
-      <p class="tourline"><button class="btn small" id="tour" type="button"><b aria-hidden="true">▶</b>Take the tour</button><span class="kbd">60 seconds, no presenter needed</span></p>
-      <div class="ask" id="asksec">
-        <label class="sr" for="text">What is the agent about to do?</label>
-        <textarea id="text" placeholder="e.g. Migrate the user store from Postgres to MongoDB to avoid joins"></textarea>
-        <div class="askrow">
-          <button class="btn go" id="go">Check it</button>
-          <span class="kbd">Ctrl + Enter, or press / to jump here</span>
+  <main>
+  <!-- ============ Check: what Sthira is, and the one thing it does ============ -->
+  <div class="view" data-v="home">
+    <section class="hero">
+      <div class="strata" aria-hidden="true"><canvas id="strata"></canvas></div>
+      <div>
+        <h1>Is your AI about to undo what you decided?</h1>
+        <p class="lede">Sthira keeps every decision you make with AI, in your own words. Paste what an agent plans to do, and it tells you if that breaks one.</p>
+        <div class="ask" id="asksec">
+          <label class="sr" for="text">What is the agent about to do?</label>
+          <textarea id="text" placeholder="e.g. Migrate the user store from Postgres to MongoDB to avoid joins"></textarea>
+          <div class="askrow">
+            <button class="btn go" id="go">Check it</button>
+            <span class="kbd">Ctrl + Enter</span>
+            <button class="textbtn" id="tour" type="button">Take the 60-second tour</button>
+          </div>
+          <div class="chips" id="chips"></div>
         </div>
-        <div class="chips" id="chips"></div>
       </div>
-    </div>
-    <div class="arena" id="arena" aria-live="polite"></div>
-  </section>
+      <div class="arena" id="arena" aria-live="polite"></div>
+    </section>
 
-  <section class="sec" id="awaysec">
-    <div class="sechead">
-      <div><h2>While you were away</h2><p class="sub">Sthira watches your Claude Code sessions and an inbox folder, and speaks up the moment an agent goes against a decision.</p></div>
-      <div id="dropbox"></div>
-    </div>
-    <div class="feed" id="feed"></div>
-  </section>
+    <section class="sec" id="awaysec">
+      <div class="sechead">
+        <div><h2>While you were away</h2><p class="sub">Sthira watches your Claude Code sessions and an inbox folder, and speaks up the moment an agent goes against a decision.</p></div>
+        <div id="dropbox"></div>
+      </div>
+      <div class="feed" id="feed"></div>
+    </section>
 
-  <section class="sec" id="replaysec">
-    <div class="sechead">
-      <div><h2>Watch an agent drift</h2><p class="sub">Replay a real Claude Code session. Sthira checks everything the agent says against your decisions and interrupts the moment it drifts. In real use, the watcher and the Claude Code hook do this in the background.</p></div>
-      <button class="btn go" id="replay" type="button">Replay an agent session</button>
-    </div>
-    <div class="term">
-      <div class="termbar"><span class="tt"><i aria-hidden="true"></i><span id="termtitle">claude code · recorded session</span></span><output id="termscore"></output></div>
-      <div class="termlog" id="termlog"><p class="termidle">An agent is asked to speed up the notes search. Press replay and watch what it proposes.</p></div>
-    </div>
-    <p class="sr" id="replaysay" aria-live="polite"></p>
-  </section>
+    <section class="sec how" id="how" aria-labelledby="howtitle">
+      <h2 id="howtitle">Decide once. It stays decided.</h2>
+      <ol class="steps">
+        <li>
+          <svg class="pix" data-pix="remember" viewBox="0 0 144 84" aria-hidden="true"></svg>
+          <h3>It remembers</h3>
+          <p>Sthira reads your ChatGPT and Claude exports, coding sessions and meeting notes, and keeps each decision with its reason and the exact words you said.</p>
+          <a href="#/ledger" data-go="ledger">Open the ledger</a>
+        </li>
+        <li>
+          <svg class="pix" data-pix="check" viewBox="0 0 144 84" aria-hidden="true"></svg>
+          <h3>It checks</h3>
+          <p>Before an agent acts, its plan is compared with what you settled. If the plan goes against a decision, you get the decision back, quoted, with where you made it.</p>
+          <a href="#replaysec" data-jump="#replaysec">Watch it catch an agent</a>
+        </li>
+        <li>
+          <svg class="pix" data-pix="learn" viewBox="0 0 144 84" aria-hidden="true"></svg>
+          <h3>It learns</h3>
+          <p>Reject a bad catch and it becomes a rule. Change your mind and the old decision moves to history. Nothing is ever deleted.</p>
+          <a href="#/proof" data-go="proof">See the numbers</a>
+        </li>
+      </ol>
+    </section>
 
-  <section class="sec" id="wallsec">
-    <div class="sechead" id="wallhead">
-      <div><h2>The wall</h2><p class="sub">Every decision you've settled, with its reason and the exact words you said. Nothing is ever deleted.</p></div>
-      <div class="tabs" id="tabs"></div>
-    </div>
-    <div class="rewind">
-      <label for="rw">Rewind</label>
-      <input id="rw" type="range" min="0" max="1000" value="1000" aria-describedby="rwout">
-      <output id="rwout">today</output>
-    </div>
-    <div class="asof" id="asof"></div>
-    <div class="wall" id="wall"></div>
-  </section>
+    <section class="sec" id="replaysec">
+      <div class="sechead">
+        <div><h2>Watch an agent drift</h2><p class="sub">A recorded Claude Code session. Sthira checks everything the agent says against your decisions and interrupts the moment it drifts.</p></div>
+        <button class="btn go" id="replay" type="button">Replay an agent session</button>
+      </div>
+      <div class="term">
+        <div class="termbar"><span class="tt"><i aria-hidden="true"></i><span id="termtitle">claude code · recorded session</span></span><output id="termscore"></output></div>
+        <div class="termlog" id="termlog"><p class="termidle">An agent is asked to speed up the notes search. Press replay and watch what it proposes.</p></div>
+      </div>
+      <p class="sr" id="replaysay" aria-live="polite"></p>
+    </section>
+  </div>
 
-  <section class="sec">
-    <div class="two">
-      <div style="display:grid;gap:24px;min-width:0">
-        <div class="box" id="learnbox">
-          <h2 style="font-size:30px">It learns from you</h2>
-          <p class="sub" style="margin-bottom:14px">Reject a bad catch or correct a verdict, and the rule is used from then on.</p>
-          <div class="dials" id="dials"></div>
-          <div id="rules"></div>
-        </div>
-        <div class="box insights" id="insightsbox" hidden>
-          <h2>Insights</h2>
-          <p class="sub">Where your decisions come from, and when you made them. Rejected catches aren't counted.</p>
-          <div class="charts">
-            <figure class="chart"><figcaption>By source <span id="srctotal"></span></figcaption>
-              <div class="cv"><canvas id="chartsrc" role="img" aria-label="Doughnut chart of entries by source" aria-describedby="srcsay"></canvas></div>
-              <p class="sr" id="srcsay"></p></figure>
-            <figure class="chart"><figcaption>Decided, by month <span id="timespan"></span></figcaption>
-              <div class="cv"><canvas id="charttime" role="img" aria-label="Bar chart of entries by the month they were decided" aria-describedby="timesay"></canvas></div>
-              <p class="sr" id="timesay"></p></figure>
+  <!-- ============ Ledger: everything you decided, what happened while you were away, and adding more ============ -->
+  <div class="view" data-v="ledger">
+    <section class="sec" id="wallsec">
+      <div class="phead" id="wallhead">
+        <div><h2>Your ledger</h2><p class="sub">Every decision you've settled, with its reason and the exact words you said. Nothing is ever deleted.</p></div>
+        <div class="tabs" id="tabs"></div>
+      </div>
+      <div class="rewind">
+        <label for="rw">Rewind</label>
+        <input id="rw" type="range" min="0" max="1000" value="1000" aria-describedby="rwout">
+        <output id="rwout">today</output>
+      </div>
+      <div class="asof" id="asof"></div>
+      <div class="wall" id="wall"></div>
+    </section>
+
+    <section class="sec split" id="importbox">
+      <div>
+        <h2>Feed it your history</h2>
+        <p class="sub">A ChatGPT or Claude export, a Claude Code session, or a meeting transcript. The model reads it and proposes decisions for you to settle, each with its quote.</p>
+      </div>
+      <div>
+        <label class="drop" id="drop" for="file"><b>Drop a file here</b><br><span class="meta">or click to choose · .json .jsonl .md .txt .vtt .srt .zip</span>
+          <input id="file" type="file" accept=".json,.jsonl,.md,.txt,.zip,.vtt,.srt"></label>
+        <p class="meta" id="upmsg"></p>
+        <div class="reader" id="reader" hidden aria-live="polite">
+          <div class="paper" id="paper" aria-hidden="true"></div>
+          <div>
+            <div class="rphase" id="rphase"></div>
+            <div class="rbar"><i id="rfill"></i></div>
+            <div class="rnums"><span id="rcount"></span><span id="reta"></span></div>
+            <div class="found" id="found"></div>
           </div>
         </div>
       </div>
-      <div style="display:grid;gap:24px">
-        <div class="box" id="importbox">
-          <h2 style="font-size:30px">Feed it your history</h2>
-          <p class="sub" style="margin-bottom:14px">A ChatGPT or Claude export, a Claude Code session, or a meeting transcript.</p>
-          <label class="drop" id="drop" for="file"><b>Drop a file here</b><br><span class="meta">or click to choose · .json .jsonl .md .txt .vtt .srt .zip</span>
-            <input id="file" type="file" accept=".json,.jsonl,.md,.txt,.zip,.vtt,.srt"></label>
-          <p class="meta" id="upmsg" style="margin:10px 0 0"></p>
-          <div class="reader" id="reader" hidden aria-live="polite">
-            <div class="paper" id="paper" aria-hidden="true"></div>
-            <div>
-              <div class="rphase" id="rphase"></div>
-              <div class="rbar"><i id="rfill"></i></div>
-              <div class="rnums"><span id="rcount"></span><span id="reta"></span></div>
-              <div class="found" id="found"></div>
-            </div>
-          </div>
-        </div>
-        <div class="box" id="agentsbox">
-          <h2 style="font-size:30px">What every agent reads</h2>
-          <p class="sub" style="margin-bottom:12px"><code>sthira sync</code> writes this into <code>AGENTS.md</code>, <code>CLAUDE.md</code> or a Cursor rule. Over MCP, agents call <code>check</code> before they act.</p>
+    </section>
+  </div>
+
+  <!-- ============ Proof: what it has learned here, and the fixed offline evaluation ============ -->
+  <div class="view" data-v="proof">
+    <section class="sec" id="learnbox">
+      <div class="phead">
+        <div><h2>It learns from you</h2><p class="sub">Reject a bad catch or correct a verdict, and the rule is used from then on. These numbers are live, from this ledger.</p></div>
+      </div>
+      <div class="dials" id="dials"></div>
+      <div class="rules" id="rules"></div>
+    </section>
+
+    <section class="sec insights" id="insightsbox" hidden>
+      <div class="sechead"><div><h2>Where your decisions come from</h2><p class="sub">By source, and by the month you made them. Rejected catches aren't counted.</p></div></div>
+      <div class="charts">
+        <figure class="chart"><figcaption>By source <span id="srctotal"></span></figcaption>
+          <div class="cv"><canvas id="chartsrc" role="img" aria-label="Doughnut chart of entries by source" aria-describedby="srcsay"></canvas></div>
+          <p class="sr" id="srcsay"></p></figure>
+        <figure class="chart"><figcaption>Decided, by month <span id="timespan"></span></figcaption>
+          <div class="cv"><canvas id="charttime" role="img" aria-label="Bar chart of entries by the month they were decided" aria-describedby="timesay"></canvas></div>
+          <p class="sr" id="timesay"></p></figure>
+      </div>
+    </section>
+
+    <section class="sec" id="evidence" aria-labelledby="evtitle" hidden>
+      <div class="sechead">
+        <div><h2 id="evtitle">The offline evaluation</h2><p class="sub">From <code>eval/README.md</code>: a small hand-built scenario, scored against a gold list. These are fixed numbers from that run, not this page's ledger.</p></div>
+        <span class="evstamp" id="evdate">offline eval</span>
+      </div>
+      <div class="evgrid" id="evgrid"></div>
+      <div class="evlimits" id="evlimits"></div>
+    </section>
+  </div>
+
+  <!-- ============ Connect: put the ledger in front of your agents ============ -->
+  <div class="view" data-v="connect">
+    <section class="sec">
+      <div class="phead">
+        <div><h2>Put it in front of your agents</h2><p class="sub">Sthira writes what you settled into the files agents already read, and answers them over MCP before they act.</p></div>
+      </div>
+      <div class="pair">
+        <div class="panel" id="agentsbox">
+          <h3>What every agent reads</h3>
+          <p class="sub"><code>sthira sync</code> writes this into <code>AGENTS.md</code>, <code>CLAUDE.md</code> or a Cursor rule.</p>
           <pre id="agents">…</pre>
-          <div class="use" id="installbox">
-            <h3>Use it today</h3>
-            <p class="sub">Every command below is the real one from the README. Swap in your own paths.</p>
-            <div class="tabs itabs" id="itabs" role="tablist" aria-label="Ways to use Sthira"></div>
-            <div class="ipanel" id="ipanel" role="tabpanel" tabindex="0">
-              <div class="ihead"><p id="inote"></p><button class="btn small" id="icopy" type="button">Copy</button></div>
-              <pre id="icode"></pre>
-            </div>
-            <div class="iexport">
-              <span class="meta">Take the whole ledger with you, superseded and rejected entries included.</span>
-              <a class="btn small" id="exjson" href="/api/export?format=json" download="sthira-ledger.json">Ledger as JSON</a>
-              <a class="btn small" id="exmd" href="/api/export?format=md" download="sthira-ledger.md">Ledger as Markdown</a>
-            </div>
+        </div>
+        <div class="panel" id="installbox">
+          <h3>Set it up</h3>
+          <p class="sub">Each command is the real one from the README. Swap in your own paths.</p>
+          <div class="tabs itabs" id="itabs" role="tablist" aria-label="Ways to use Sthira"></div>
+          <div class="ipanel" id="ipanel" role="tabpanel" tabindex="0">
+            <div class="ihead"><p id="inote"></p><button class="btn small" id="icopy" type="button">Copy</button></div>
+            <pre id="icode"></pre>
           </div>
         </div>
       </div>
-    </div>
-  </section>
-
-  <section class="sec" id="evidence" aria-labelledby="evtitle" hidden>
-    <div class="sechead">
-      <div><h2 id="evtitle">Evidence: does it actually work?</h2><p class="sub">The offline evaluation from <code>eval/README.md</code>: a small hand-built scenario, scored against a gold list. These are fixed numbers from that run, not this page's ledger. The live ring in “It learns from you” is that.</p></div>
-      <span class="evstamp" id="evdate">offline eval</span>
-    </div>
-    <div class="evgrid" id="evgrid"></div>
-    <div class="evlimits" id="evlimits"></div>
-  </section>
+      <div class="iexport">
+        <p>Take the whole ledger with you, superseded and rejected entries included.</p>
+        <a class="btn small" id="exjson" href="/api/export?format=json" download="sthira-ledger.json">Ledger as JSON</a>
+        <a class="btn small" id="exmd" href="/api/export?format=md" download="sthira-ledger.md">Ledger as Markdown</a>
+      </div>
+    </section>
+  </div>
+  </main>
 
   <footer>
+    <div class="strata dark" aria-hidden="true"><canvas id="footstrata"></canvas></div>
     <div class="footin">
-      <p class="footbig">What you decided, kept.</p>
-      <div class="footrow"><span class="deva" lang="sa">स्थिर</span><span>Sthira. Sanskrit for steady, firm.</span><a href="https://github.com/HelloOjasMutreja/Sthira">Source on GitHub</a><span>MIT licence</span></div>
-      <p class="footfine">It runs on Qwen3 through Ollama on your own machine. This page may be using a hosted open-weight model instead, and says which one at the top. Built at Hacktoberfest Hack Day Bengaluru 2026, for adaptive AI with memory and self-correction.</p>
+      <div class="footlead">
+        <p class="footbig">What you decided, kept.</p>
+        <p class="footsub"><span class="deva" lang="sa">स्थिर</span> Sthira is Sanskrit for steady.</p>
+      </div>
+      <nav class="footnav" aria-label="Footer">
+        <div><a href="#/" data-go="home">Check</a><a href="#/ledger" data-go="ledger">Ledger</a><a href="#/proof" data-go="proof">Proof</a><a href="#/connect" data-go="connect">Connect</a></div>
+        <div><a href="https://github.com/HelloOjasMutreja/Sthira">Source on GitHub</a><span>MIT licence</span><button id="sound" type="button" aria-pressed="false" title="Toggle sound effects">Sound off</button></div>
+      </nav>
+      <p class="footfine">It runs on Qwen3 through Ollama on your own machine. This page may be using a hosted open-weight model instead, and says which one at the top. Built at Hacktoberfest Hack Day Bengaluru 2026.</p>
     </div>
-    <svg id="stairs" preserveAspectRatio="xMaxYMax meet" aria-hidden="true"></svg>
   </footer>
 </div>
 
@@ -775,6 +879,7 @@ body.palopen{overflow:hidden}
 
 <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" crossorigin="anonymous"></script>
 <script>
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -795,17 +900,19 @@ const post = (url, body) => j(url, {method: "POST", headers: {"Content-Type": "a
 /* ---------- the strata: the brand graphic, and a live readout of the check ----------
    Bands of pixels that dissolve through an ordered dither, drawn at one sixth resolution and scaled up.
    Green while everything is settled; it scans while a plan is checked, and turns orange and jolts when the plan
-   goes against a decision. The pointer wipes pixels loose and they settle back. */
-const Strata = (() => {
-  const cv = $("#strata"), box = cv && cv.parentElement;
-  if (!cv || !cv.getContext) return {set() {}};
+   goes against a decision. The pointer wipes pixels loose and they settle back. The footer runs the same thing on black. */
+function makeStrata(cv, {dark = false} = {}) {
+  const box = cv && cv.parentElement;
+  if (!cv || !cv.getContext) return {set() {}, stats: () => ({})};
   const ctx = cv.getContext("2d");
   const BAYER = [0,32,8,40,2,34,10,42,48,16,56,24,50,18,58,26,12,44,4,36,14,46,6,38,60,28,52,20,62,30,54,22,
                  3,35,11,43,1,33,9,41,51,19,59,27,49,17,57,25,15,47,7,39,13,45,5,37,63,31,55,23,61,29,53,21].map(v => (v + .5) / 64);
   const pack = c => (255 << 24 | c[2] << 16 | c[1] << 8 | c[0]) >>> 0;  // RGBA bytes as one little-endian word
-  const GREEN = [[255,255,255],[214,252,243],[111,242,210],[52,222,160],[20,184,119],[10,122,78],[6,62,40],[4,28,20]].map(pack);
-  const ORANGE = [[255,255,255],[255,234,217],[255,190,140],[255,146,72],[255,90,31],[208,56,10],[104,26,6],[36,11,5]].map(pack);
-  const ROWS = 12, FADE = .52, TOP = GREEN.length - 1;
+  const GREEN = (dark ? [[11,11,12],[8,26,20],[6,46,31],[8,84,56],[10,122,78],[20,184,119],[52,222,160],[111,242,210]]
+                      : [[255,255,255],[214,252,243],[111,242,210],[52,222,160],[20,184,119],[10,122,78],[6,62,40],[4,28,20]]).map(pack);
+  const ORANGE = (dark ? [[11,11,12],[36,11,5],[104,26,6],[208,56,10],[255,90,31],[255,146,72],[255,190,140],[255,234,217]]
+                       : [[255,255,255],[255,234,217],[255,190,140],[255,146,72],[255,90,31],[208,56,10],[104,26,6],[36,11,5]]).map(pack);
+  const ROWS = 12, FADE = dark ? .6 : .52, TOP = GREEN.length - 1, BG = GREEN[0];
   let W = 0, H = 0, cell = 6, img, px, heat, hot = false, bands = [];
   let t = 0, last = 0, raf = 0, seen = true, mix = 0, mixTo = 0, energy = 0, energyTo = 0, scanning = false, scanX = 0, wave = -1, intro = reduced ? 1 : 0;
 
@@ -832,13 +939,13 @@ const Strata = (() => {
       const e = b.edge + b.off + slide + Math.sin(t * b.speed + b.phase) * amp, by = (y & 7) * 8, by2 = ((y + 3) & 7) * 8, row = y * W;
       for (let x = 0; x < W; x++) {
         let u = (x / W - e) / FADE;
-        if (u <= 0 && !hot) { px[row + x] = 0xffffffff; continue; }
+        if (u <= 0 && !hot) { px[row + x] = BG; continue; }
         if (u > 0) u += lip;
         const ds = x - sx, dw = x - wx;
         if (ds > -12 && ds < 2 && u > 0) u += (1 + ds / 12) * .34;
         if (dw > -3 && dw < 14 && u > 0) u += (1 - Math.abs(dw - 5) / 9) * .3;
         if (hot) u -= heat[row + x];
-        if (u <= 0) { px[row + x] = 0xffffffff; continue; }
+        if (u <= 0) { px[row + x] = BG; continue; }
         const v = (u > 1 ? 1 : u) * TOP, i0 = v | 0, k = v - i0 > BAYER[by + (x & 7)] ? i0 + 1 : i0;
         px[row + x] = (mix > BAYER[by2 + ((x + 5) & 7)] ? ORANGE : GREEN)[k > TOP ? TOP : k];
       }
@@ -870,8 +977,7 @@ const Strata = (() => {
     if (reduced) { mix = mixTo; draw(); } else run();
   }
   // The pointer wipes pixels loose; they settle back on their own.
-  const hero = box.closest(".hero") || box;
-  hero.addEventListener("pointermove", ev => {
+  box.parentElement.addEventListener("pointermove", ev => {
     if (reduced || !heat) return;
     const r = cv.getBoundingClientRect(), cx = (ev.clientX - r.left) / cell | 0, cy = (ev.clientY - r.top) / cell | 0, R = 8;
     if (cx < -R || cy < -R || cx > W + R || cy > H + R) return;
@@ -885,19 +991,68 @@ const Strata = (() => {
   document.addEventListener("visibilitychange", () => { if (!document.hidden) run(); });
   size(); run();
   return {set, stats: () => ({W, H, cell})};
-})();
+}
+const Strata = makeStrata($("#strata"));
+makeStrata($("#footstrata"), {dark: true});
 
-/* The footer's stack of blocks: everything that went against a decision, piled in the corner. */
-(() => {
-  const svg = $("#stairs"); if (!svg) return;
-  const C = 22, R = 11, S = 40, tones = ["#ff5a1f", "#ff5a1f", "#ff7a2e", "#ff9d3c", "#ffb877", "#e04a12"], tone = () => tones[Math.random() * tones.length | 0];
-  let out = "";
-  for (let c = 0; c < C; c++) {
-    const h = Math.round(Math.pow(c / (C - 1), 1.6) * (R - 1)) + (c > 2 && Math.random() < .4 ? 1 : 0);
-    for (let r = 0; r < h; r++) out += `<rect x="${c * S}" y="${(R - 1 - r) * S}" width="${S}" height="${S}" fill="${tone()}"/>`;
+/* ---------- views: four pages in one file, addressed by the hash (#/, #/ledger, #/proof, #/connect) ---------- */
+const VIEWS = ["home", "ledger", "proof", "connect"], TITLES = {home: "Sthira: what you decided, kept", ledger: "Your ledger · Sthira", proof: "Proof · Sthira", connect: "Connect · Sthira"};
+let view = null;
+const viewFromHash = () => { const v = location.hash.replace(/^#\/?/, ""); return VIEWS.includes(v) ? v : "home"; };
+// quiet: switch without scrolling to the top or animating (the tour and "go to" commands place the page themselves).
+function go(v, {quiet = false, push = true} = {}) {
+  if (!VIEWS.includes(v)) v = "home";
+  if (v === view) return;
+  const first = view === null; view = v;
+  document.body.dataset.view = v; document.title = TITLES[v];
+  document.querySelectorAll("#nav a").forEach(a => a.dataset.go === v ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
+  const hash = v === "home" ? "#/" : "#/" + v;
+  if (push && !first && location.hash !== hash) history.pushState(null, "", hash);
+  if (!first && !quiet) {
+    scrollTo({top: 0, behavior: "instant"});
+    if (window.gsap && !reduced) gsap.fromTo(`.view[data-v="${v}"] > *`, {y: 28, autoAlpha: 0},
+      {y: 0, autoAlpha: 1, duration: .6, stagger: .09, ease: "power3.out", clearProps: "transform,opacity,visibility"});
   }
-  svg.setAttribute("viewBox", `0 0 ${C * S} ${R * S}`); svg.innerHTML = out;
-  if (!reduced) setInterval(() => { const rs = svg.children; if (rs.length && !document.hidden) rs[Math.random() * rs.length | 0].setAttribute("fill", tone()); }, 260);
+  if (v === "proof") requestAnimationFrame(() => { drawInsights(); loadStats(); });  // charts need a visible canvas; the dials count up on arrival
+}
+// Make sure the view that holds this element is the one on screen.
+function reveal(el) { const v = el?.closest?.(".view")?.dataset.v; if (v && v !== view) go(v, {quiet: true}); }
+addEventListener("hashchange", () => go(viewFromHash(), {push: false}));
+addEventListener("popstate", () => go(viewFromHash(), {push: false}));
+document.addEventListener("click", ev => {
+  if (ev.defaultPrevented || ev.button || ev.metaKey || ev.ctrlKey) return;
+  const a = ev.target.closest("[data-go],[data-jump]"); if (!a) return;
+  ev.preventDefault();
+  if (a.dataset.go) return go(a.dataset.go);
+  const t = $(a.dataset.jump); if (t) { reveal(t); t.scrollIntoView({block: "start", behavior: reduced ? "auto" : "smooth"}); }
+});
+
+/* ---------- how it works: three small pixel pictures that assemble as they scroll into view ---------- */
+(() => {
+  const STACK = [[8, 11, 2], [6, 11, 3], [4, 11, 4], [2, 11, 5], [0, 11, 6]];  // [first column, last column, row]
+  const cells = (rows, cls) => rows.flatMap(([a, b, r]) => Array.from({length: b - a + 1}, (_, i) => `<rect class="${cls}" x="${(a + i) * 12 + 1}" y="${r * 12 + 1}" width="10" height="10"/>`)).join("");
+  const PIX = {
+    remember: cells(STACK, "k"),
+    check: cells(STACK, "k") + cells([[0, 5, 3]], "o"),
+    learn: cells(STACK, "k") + cells([[10, 11, 1]], "g"),
+  };
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const play = svg => {
+    const g = window.gsap; if (!g || reduced) return;
+    const k = svg.querySelectorAll(".k"), kind = svg.dataset.pix;
+    if (kind === "remember") g.from(k, {x: () => rnd(-70, 40), y: () => rnd(-60, 30), opacity: 0, duration: .9, ease: "power3.out", stagger: {each: .012, from: "random"}});
+    else {
+      g.from(k, {opacity: 0, duration: .3, stagger: {each: .006, from: "end"}});
+      if (kind === "check") g.timeline({delay: .5}).from(svg.querySelectorAll(".o"), {x: -90, opacity: 0, duration: .45, ease: "power2.in", stagger: -.02})
+        .fromTo(svg, {x: 5}, {x: 0, duration: .5, ease: "elastic.out(1.2,.25)"});
+      else g.from(svg.querySelectorAll(".g"), {y: -44, opacity: 0, duration: .5, delay: .55, ease: "steps(5)"});
+    }
+  };
+  const svgs = [...document.querySelectorAll(".pix")];
+  svgs.forEach(s => s.innerHTML = PIX[s.dataset.pix] || "");
+  if (!window.IntersectionObserver) return;
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { io.unobserve(e.target); play(e.target); } }), {threshold: .5});
+  svgs.forEach(s => io.observe(s));
 })();
 
 /* ---------- small delights ---------- */
@@ -972,6 +1127,7 @@ let checking = false;
 // prev: the verdict being corrected. When set, this is a re-check and the result is shown as before → after.
 async function runCheck(prev = null) {
   const text = $("#text").value.trim(); if (!text || checking) return;
+  reveal($("#arena"));
   checking = true; $("#go").disabled = true; Strata.set("scan");
   const arena = $("#arena");
   if (arena.getBoundingClientRect().top > innerHeight * .55) arena.scrollIntoView({behavior: reduced ? "auto" : "smooth", block: "start"});
@@ -1163,6 +1319,7 @@ async function loadActivity() {
   const fresh = alerts.filter(a => !seenAlertIds.has(a.id));
   if (!firstFeed && fresh.length) { toast(`Caught: an agent just went against “${fresh[0].detail.decision.slice(0, 60)}”`, "bad"); blip("stamp"); }
   alerts.forEach(a => seenAlertIds.add(a.id));
+  $("#navalert").hidden = !alerts.length || view === "home";
   // Re-render only when the feed changed: replacing the DOM on every poll would replay the entrance animations.
   const sig = feed.slice(0, 8).map(a => a.id).join(",") + "|" + Math.floor(Date.now() / 60000);
   if (sig !== loadActivity.sig) {
@@ -1383,14 +1540,18 @@ function tour() {
   // The evidence card closes the tour when /api/eval loaded, with the numbers it served.
   const ev = !$("#evidence").hidden && evidence, crit = ev && ev.checks.rows.find(r => r.winner), single = ev && ev.checks.rows.find(r => !r.winner);
   const evStep = ev && crit && single ? {element: "#evcritic", popover: {title: "And the honest numbers", side: "top", align: "start",
-    description: `From the offline evaluation: the self-correction critic took contradiction checks from ${single.correct}/${single.total} to ${crit.correct}/${crit.total}, and we ran Sthira on its own build. Smoke-test numbers, with their limits. That's the tour.`}} : null;
+    description: `From the offline evaluation: the self-correction critic took contradiction checks from ${single.correct}/${single.total} to ${crit.correct}/${crit.total}, and we ran Sthira on its own build. Smoke-test numbers, with their limits.`}} : null;
+  const awayShown = !!$("#feed .conf, #feed .rd, #dropbox > *");  // that section only shows when it has something in it
   const d = window.driver.js.driver({
     showProgress: true, progressText: "{{current}} of {{total}}", nextBtnText: "Next", prevBtnText: "Back", doneBtnText: "Done",
     popoverClass: "sthira-tour", overlayColor: "#0b0b0c", overlayOpacity: .55, stagePadding: 14, stageRadius: 6,
     animate: !reduced, smoothScroll: !reduced, allowClose: true,
+    onHighlightStarted: el => reveal(el),  // the tour walks across views
     steps: [
       {element: $("#wall .tab-card") || $("#wallhead"), popover: {title: "What you decided", side: "bottom", align: "start",
         description: "Sthira read the team's chats and meetings, and kept each decision with its reason, the exact words said, and where. Nothing is deleted: old decisions move to History."}},
+      {element: "#importbox", popover: {title: "Feed it your history", side: "top", align: "start",
+        description: "Drop a ChatGPT or Claude export, a Claude Code session or a meeting transcript. A local open-weight model reads it and cites every quote."}},
       {element: "#asksec", popover: {title: "An agent is about to act", side: "bottom", align: "start",
         description: "Say a coding agent plans to move the user store to MongoDB. Press Next and Sthira checks the plan against everything you've settled.",
         onNextClick: async () => {
@@ -1404,17 +1565,15 @@ function tour() {
       // The whole verdict can be taller than the screen, so point at the decision it cites; the stamp stays in view above it.
       {element: "#stone", onHighlighted: showStamp, popover: {title: "It speaks up, with the receipt", side: narrow ? "bottom" : "left", align: "start",
         description: "OVERRULED: the decision it goes against, the exact words you said, and why. Keep your decision, or change your mind and the old one stays in history."}},
-      {element: "#learnbox", popover: {title: "It learns from you", side: "top", align: "start",
-        description: "Reject a bad catch or correct a verdict, and it becomes a rule for every later run. On qwen3:4b, precision on unseen chats rose from 60% to 71% after one round."}},
-      {element: "#awaysec", popover: {title: "It watches while you're away", side: "top", align: "start",
-        description: "Sthira reads your Claude Code sessions and an inbox folder in the background, and flags the moment an agent goes against a decision."}},
+      ...(awayShown ? [{element: "#awaysec", popover: {title: "It watches while you're away", side: "top", align: "start",
+        description: "Sthira reads your Claude Code sessions and an inbox folder in the background, and flags the moment an agent goes against a decision."}}] : []),
       {element: "#replaysec", popover: {title: "Or watch it live", side: "top", align: "start",
         description: "Replay a recorded Claude Code session after the tour, and see Sthira interrupt each time the agent drifts from a decision."}},
-      {element: "#importbox", popover: {title: "Feed it your history", side: "top", align: "start",
-        description: "Drop a ChatGPT or Claude export, a Claude Code session or a meeting transcript. A local open-weight model reads it and cites every quote."}},
-      {element: "#agentsbox", popover: {title: "Every agent reads it", side: "top", align: "start",
-        description: "The ledger goes into AGENTS.md and CLAUDE.md, and over MCP agents call check before they act." + (evStep ? "" : " That's the tour.")}},
+      {element: "#learnbox", popover: {title: "It learns from you", side: "top", align: "start",
+        description: "Reject a bad catch or correct a verdict, and it becomes a rule for every later run. On qwen3:4b, precision on unseen chats rose from 60% to 71% after one round."}},
       ...(evStep ? [evStep] : []),
+      {element: "#agentsbox", popover: {title: "Every agent reads it", side: "top", align: "start",
+        description: "The ledger goes into AGENTS.md and CLAUDE.md, and over MCP agents call check before they act." + " That's the tour."}},
     ],
   });
   d.drive();
@@ -1577,18 +1736,18 @@ let palFrom = null, palItems = [], palSel = 0;
 const palOpen = () => !$("#pal").hidden;
 const SECTIONS = [
   ["Check a plan", "#asksec", "#text", "ask agent"],
-  ["While you were away", "#awaysec", null, "feed alerts watcher inbox"],
   ["Watch an agent drift", "#replaysec", null, "replay terminal"],
   ["The wall", "#wallsec", null, "ledger decisions rewind"],
   ["It learns from you", "#learnbox", null, "rules corrections precision stats"],
   ["Insights", "#insightsbox", null, "charts sources months stats"],
   ["Feed it your history", "#importbox", null, "import upload file export"],
   ["What every agent reads", "#agentsbox", null, "agents.md claude.md mcp sync"],
-  ["Use it today: install", "#installbox", "#itabs [aria-selected=true]", "install setup cli mcp hook cursor agents.md claude code uv copy"],
+  ["Set it up: install", "#installbox", "#itabs [aria-selected=true]", "install setup cli mcp hook cursor agents.md claude code uv copy"],
   ["Evidence", "#evidence", null, "eval evaluation proof numbers precision recall critic dogfood limits does it work"],
 ];
 function goTo(sel, focusSel) {
   const t = $(sel); if (!t) return;
+  reveal(t);
   t.scrollIntoView({block: "start", behavior: reduced ? "auto" : "smooth"});
   const f = (focusSel && $(focusSel)) || t;
   if (f === t && !t.hasAttribute("tabindex")) { t.tabIndex = -1; t.classList.add("jumpto"); }
@@ -1705,7 +1864,7 @@ addEventListener("keydown", ev => {
   const a = document.activeElement;
   if (key === "/" && !ev.ctrlKey && !ev.metaKey && !ev.altKey && $("#drawer").hidden && !$("#ask").open && !touring()
       && !/INPUT|TEXTAREA|SELECT/.test(a?.tagName || "") && !a?.isContentEditable) {
-    ev.preventDefault(); $("#text").focus();
+    ev.preventDefault(); reveal($("#text")); $("#text").focus();
   }
 }, true);
 
@@ -1954,6 +2113,7 @@ async function load() {
   if (!checking && !$("#arena").children.length) renderIdle();
   $("#agents").textContent = (await j("/api/agents-md").catch(() => ({markdown: ""}))).markdown;
 }
+go(viewFromHash(), {push: false});
 j("/api/meta").then(m => $("#model").textContent = m.model).catch(() => $("#model").textContent = "offline");
 load();
 loadEvidence();
